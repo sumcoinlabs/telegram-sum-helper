@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "basis": "Telegram Desktop export, public @sumcoins group",
+  "from": "2019-03-14",
+  "through": "2026-10-31",
+  "totalEvents": 9531,
+  "textMessages": 6573,
+  "serviceEvents": 2764,
+  "method": "Approximate, overlapping case-insensitive keyword patterns; not unique users or verified facts",
+  "topicCounts": {
+    "community_and_updates": 812,
+    "wallet_and_recovery": 697,
+    "p2p_exchanges_cashout": 632,
+    "network_transactions_balances": 382,
+    "price_and_index": 366,
+    "legacy_and_migration": 359,
+    "fees_fraud_and_security": 250,
+    "staking_mining_consensus": 229
+  },
+  "priorityIntents": [
+    "legacy PoW balance versus current PoS chain",
+    "Slice recovery and wallet compatibility",
+    "migration fee method and eligibility",
+    "index quote versus cashout and available buyers",
+    "exchange withdrawal and third-party custody",
+    "public transaction verification",
+    "staking and obsolete mining instructions",
+    "faucet compatibility and availability"
+  ],
+  "privacy": "No raw messages, names, account IDs, wallet addresses or group transcript in the repository. Historical user claims are not authoritative sources."
+}

@@ -63,3 +63,22 @@ The timer refreshes allowlisted public documentation, GitHub text and attributed
 Download the versioned ZIP to the Mac and run its `scripts/push-update.sh` from the extracted root. It clones the existing repository into a temporary directory under `~/Documents`, verifies the approved base version and key checksums, runs the regression suite, stages only public source files, then commits and tags the new version. It neither force-pushes nor includes `data/` or `.env`. Deploy on VM using `git pull --ff-only origin main`, tests and a user-service restart.
 
 See [CHANGELOG.md](../CHANGELOG.md) for all historical changes.
+
+## Import historical Telegram exports privately
+
+On the VM, after deploying this release, run the existing importer with a local `result.json` file:
+
+```bash
+cd /home/electrumbtc1/telegram-sum-helper
+export NVM_DIR="$HOME/.nvm"
+source "$NVM_DIR/nvm.sh"
+npm run ingest -- /secure/local/path/result.json
+```
+
+Or send the exported JSON directly through an SSH pipe from a trusted Mac:
+
+```bash
+unzip -p "$HOME/Downloads/result.json.zip" result.json | ssh electrumbtc1@YOUR_VM_HOST 'cd /home/electrumbtc1/telegram-sum-helper && /home/electrumbtc1/.nvm/versions/node/v24.22.2/bin/node scripts/learn-export.mjs -'
+```
+
+Replace `YOUR_VM_HOST` with your actual SSH destination and change the ZIP path if saved elsewhere. This imports only privacy-filtered question-pattern fingerprints, not a copy of the full transcript, users, or messages. Do not commit or push the original export or `data/learning.json`. The published, anonymized aggregate summary is in `docs/COMMUNITY-INSIGHTS.md`.

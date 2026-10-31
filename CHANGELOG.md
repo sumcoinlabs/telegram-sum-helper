@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.12 — 2026-10-31
+
+- Fix contradictory consensus replies: *Is SUM PoS?* receives **Yes**, *Is SUM PoW?* receives **No**, *Was Sumcoin originally PoW?* receives **Yes**, and ambiguous/negative questions receive neutral, dated context. Localized responses for all 14 supported languages.
+- Resolve *so it is PoS* as a short confirmation of that member's recent consensus answer, without interrupting unrelated chatter or admin announcements. Preserve safe group modes, member opt-outs, the review queue and previous follow-up behavior.
+- Analyze the 2019–2026 Telegram Desktop history privately: 9,531 events and 6,573 text messages. Publish only anonymous, overlapping category totals and editorial priorities, **not member posts, handles, addresses, or chat transcript**.
+- Add five reviewed, sourced support topics motivated by recurring historical questions: old-chain balances, migration fee payment method, third-party trading safety, faucet compatibility, and old/new wallet balance mismatch. Improve common-language search phrases for existing topics.
+- Allow `npm run ingest -- -` to read a Telegram Desktop JSON export via standard input. This merges privacy-filtered recurring question fingerprints into local `data/learning.json` without retaining the raw archive on the VM. It never treats historical member statements as verified facts.
+- Regression tests for exact conversation from the Oct 31 screenshot, historical-vs-current consensus, multilingual answers, role/opt-out restrictions, private export ingestion, and history-derived FAQ retrieval. Existing tests retained.
+
 ## 0.0.11 — 2026-10-31
 
 - Fix natural follow-ups after **automatic** bot answers: remember curated topic identifiers upon successful delivery, support short multilingual “tell me more” requests for the same member for five minutes, and let a direct reply to a bot message follow that specific answer for up to 30 minutes. Keep context in memory only; do not retain member message text or share private context between members.

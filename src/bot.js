@@ -9,7 +9,7 @@ import { livePrice,liveTransaction,liveAddress } from './live.js';
 import {ui,preferredCurrency} from './locale-ui.js';
 import {needsHumanReview,isDismissal,REVIEW_USERNAME} from './escalations.js';
 import {supportUI} from './support-ui.js';
-import {priceIntent,consensusIntent,consensusReply} from './intent.js';
+import {priceIntent,consensusIntent,consensusReply,isPoSConfirmation,consensusAnswerKind} from './intent.js';
 
 export function isCurrentPriceQuestion(q){
   const text=String(q||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').normalize('NFC');
@@ -185,7 +185,7 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?config.userCooldownHours:0,automatic?config.topicCooldownSeconds:0))return;
     const pricing=priceIntent(q);
     if(pricing)return sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang);
-    if(consensusIntent(q))return sendTopic(m,consensusReply(lang),'chain',lang);
+    if(consensusIntent(q))return sendTopic(m,consensusReply(lang,q),'chain',lang);
     const retrievalQuery=ai.apiKey?ai.retrievalQuestion(key,q):q;
     const docs=knowledge.search(contextId?knowledge.find(contextId)?.title||q:retrievalQuery,{limit:12});
     if(escalations&&!automatic&&inAllowedGroup(m.chat,config)&&!await admin(m)&&
@@ -429,6 +429,13 @@ ${ui(lang,'safety')}`);
     // Follow a recent answer to THIS member only. A bare "tell me more"
     // without a recent answer remains ordinary chatter and is ignored.
     const prior=recentTopic(m);
+    // Affirm a direct, recent consensus clarification without turning every
+    // ordinary status statement into bot chatter. No cross-member context.
+    if(isPoSConfirmation(m.text)&&prior?.id==='chain'&&prior.autoUntil>now()){
+      if(m.sender_chat||await admin(m,true)||isMuted(m)||state.data.mode!=='reply')return;
+      if(!state.shouldReply(m,`auto:consensus-confirmation:${m.from?.id}`,0.00056,0))return;
+      return sendTopic(m,consensusReply(prior.lang,m.text),'chain',prior.lang);
+    }
     if(isMoreRequest(m.text)&&prior?.autoUntil>now()){
       if(m.sender_chat||await admin(m,true)||isMuted(m)||state.data.mode!=='reply')return;
       return ask(m,m.text,{expanded:true});
@@ -451,7 +458,7 @@ ${ui(lang,'safety')}`);
       return;
     }
     if(consensusIntent(m.text)){
-      if(state.shouldReply(m,`auto:consensus:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,consensusReply(lang),'chain',lang);}
+      if(state.shouldReply(m,`auto:consensus:${consensusAnswerKind(m.text)}:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,consensusReply(lang,m.text),'chain',lang);}
       return;
     }
     const detected=topic||learning.learnedTopic(m.text);

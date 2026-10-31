@@ -140,7 +140,7 @@ test('v011 README uses exact official Sumcoin logo, real project badges and stay
   const readme=fs.readFileSync(new URL('../README.md',import.meta.url),'utf8');
   assert.match(readme,/https:\/\/sumcoin\.org\/wp-content\/uploads\/2019\/07\/sumcoin_400x400\.png/);
   assert.match(readme,/actions\/workflows\/test\.yml\/badge\.svg/);
-  assert.match(readme,/version-0\.0\.11/);
+  assert.match(readme,/version-0\.0\.\d+/);
   assert.match(readme,/license-MIT/);
   assert.ok(readme.split('\n').length<100);
   assert.ok(readme.length<7000);

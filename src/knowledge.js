@@ -96,6 +96,11 @@ export class Knowledge {
       if(d.id==='index-math'&&/market cap formula|circulating supply|index formula|market capitalization.*calculat/.test(q))score+=20;
       if(d.id==='index-data'&&/data source|where.*data|cryptocompare|feed provider/.test(q))score+=16;
       if(d.id==='buy'&&/where (?:can|do).*buy|exchange list|kiosk|atm|coinbase/.test(q))score+=6;
+      if(d.id==='legacy-chain'&&/(?:old|retired|pow|proof.of.work|fork).*(?:chain|coins?|balance|wallet)|(?:chain|coins?|balance).*(?:old|retired|fork)/.test(q))score+=14;
+      if(d.id==='migration-payment'&&/(?:migrat|swap).*(?:fee|cost|pay|deduct|dollars|percent)|(?:pay|deduct).*(?:migrat|swap)/.test(q))score+=16;
+      if(d.id==='exchange-safety'&&/(?:exchange|trader|listing).*(?:scam|legit|withdraw|trust|verified)|(?:scam|legit).*(?:exchange|trader)/.test(q))score+=14;
+      if(d.id==='faucet-compatibility'&&/\bfaucet\b|free sumcoin/.test(q))score+=16;
+      if(d.id==='wallet-network-mismatch'&&/(?:slice|old wallet).*(?:balance|wrong|recover|seed|address|connection)|(?:balance|seed).*(?:slice|old wallet)/.test(q))score+=10;
       if(d.kind==='curated')score*=1.2;
       if(d.kind==='synced')score*=0.72;
       if(d.kind==='video'||d.kind==='podcast')score*=0.45;

@@ -21,7 +21,13 @@
         "vender",
         "dinero",
         "saldo",
-        "comprar"
+        "comprar",
+        "withdraw 100 dollars",
+        "wallet displays dollars",
+        "turn SUM into cash",
+        "bank withdrawal",
+        "withdraw to bank",
+        "convert to fiat"
       ],
       "text": "To exchange SUM for fiat currency, find a willing trading partner and agree on the payment method and amount. Sumcoin Wallet stores and transfers SUM; it does not provide a bank withdrawal feature. Check /price for the current peer-to-peer reference rate when discussing a trade.",
       "sources": [
@@ -135,7 +141,12 @@
         "pow",
         "pos",
         "transfer old coins",
-        "swap old"
+        "swap old",
+        "why can’t I move Slice Wallet coins",
+        "old slice balances",
+        "retired wallet",
+        "Slice Wallet connection",
+        "old proof of work balance"
       ],
       "text": "Legacy Slice Wallet / original proof-of-work balances are not interchangeable with the current Sumcoin Wallet's Electrum/BIP39 recovery format. The official project has published a separate, eligibility-based migration process for some legacy holdings, with manual review and terms that can change. Do not promise 1:1 automatic conversion. Review the current official migration page directly before taking action. Never share seed phrases or private keys as proof of ownership; confirm any payment requests solely through verified official channels.",
       "sources": [
@@ -157,7 +168,11 @@
         "proof-of-stake",
         "pos",
         "validator",
-        "core"
+        "core",
+        "is SUM PoS",
+        "proof of stake consensus",
+        "can Sumcoin still be mined",
+        "is Sumcoin mineable"
       ],
       "text": "Current official Sumcoin materials describe the network as proof-of-stake, with staking/minting associated with compatible Sumcoin Core software and network participation. The public sumcoin_flutter repository notes that the mobile wallet will not mint. Eligibility, yields, setup and protocol parameters require checking the actual current Core release; do not promise fixed returns. Some older website pages still contain legacy mining text, so prefer current code and release documentation for technical instructions.",
       "sources": [
@@ -330,7 +345,10 @@
         "atm",
         "kiosk",
         "cash",
-        "withdraw"
+        "withdraw",
+        "where to sell Sumcoin",
+        "find SUM buyer",
+        "buy SUM peer-to-peer"
       ],
       "text": "SUM can be bought or sold directly between people. Check the current peer-to-peer reference rate with /price, confirm the counterparty and payment method, and verify the receiving address before sending.",
       "sources": [
@@ -515,7 +533,11 @@
         "spread",
         "buyer",
         "executed price",
-        "order book"
+        "order book",
+        "why cannot sell at index price",
+        "who buys at quoted rate",
+        "is price guaranteed",
+        "reference price versus trade price"
       ],
       "text": "No. The calculated SUM reference rate is distinct from what a counterparty will pay. Availability of a buyer, seller, exchange, kiosk, or merchant has to be confirmed independently. The bot never promises that an index value is immediately redeemable in dollars.",
       "sources": [
@@ -607,7 +629,10 @@
         "slice derivation",
         "legacy bip32",
         "bip39 incompatibility",
-        "wrong address migration"
+        "wrong address migration",
+        "slice seed not working",
+        "12 word Slice Wallet",
+        "different recovery words"
       ],
       "text": "Older Slice/SPV and the current Electrum/BIP39 wallet do not necessarily share derivation paths. Entering identical recovery words in incompatible software can yield different addresses. Do not assume old coins are gone; consult official migration eligibility and do not expose recovery words.",
       "sources": [
@@ -1023,6 +1048,105 @@
       "sources": [
         "https://www.sumcoin.org/about/",
         "https://x.com/sumcoinindex"
+      ]
+    },
+    {
+      "id": "legacy-chain",
+      "title": "What does it mean if my SUM is on the older proof-of-work chain?",
+      "tags": [
+        "old chain",
+        "retired chain",
+        "PoW chain",
+        "fork",
+        "forked coins",
+        "old balance",
+        "old Sumcoin",
+        "POS upgrade",
+        "coins on Slice Wallet"
+      ],
+      "text": "Sumcoin originally used proof-of-work and later moved to a proof-of-stake network. An old Slice Wallet balance or an old-chain explorer result does not automatically mean those coins are spendable in the current Sumcoin Wallet. First identify the wallet version, network, public address, and migration eligibility using current official instructions. Do not share recovery words or assume a 1:1 automatic swap.",
+      "sources": [
+        "https://www.sumcoin.org/migrations/",
+        "https://sumcoinwallet.org/",
+        "https://github.com/sumcoinlabs/sumcoin"
+      ]
+    },
+    {
+      "id": "migration-payment",
+      "title": "Can I pay a Slice Wallet migration fee using my SUM balance?",
+      "tags": [
+        "migration fee in coins",
+        "pay migration in SUM",
+        "deduct from coins",
+        "dollar migration cost",
+        "3 percent migration",
+        "migration payment method",
+        "swap fee",
+        "migration quoted price"
+      ],
+      "text": "Migration fees, payment methods, eligibility and rates are program-specific and may change. Do not assume a quoted dollar charge can be deducted from an old-chain SUM balance, or that any unsolicited payment request is legitimate. Check the currently published migration terms and verified official support channels before paying; no moderator needs your recovery phrase.",
+      "sources": [
+        "https://www.sumcoin.org/migrations/",
+        "https://www.sumcoin.org/report-a-scam/"
+      ]
+    },
+    {
+      "id": "exchange-safety",
+      "title": "How can I tell whether an exchange or trading offer for SUM is legitimate?",
+      "tags": [
+        "exchange withdrawal problem",
+        "cannot withdraw on exchange",
+        "where is SUM listed",
+        "exchange scam",
+        "unverified listing",
+        "third party custody",
+        "trader legitimacy",
+        "stex",
+        "p2p trading risk"
+      ],
+      "text": "A public exchange listing or private-message offer is not proof of an official Sumcoin partnership or available liquidity. Check current official project information and the third party independently. Exchanges may custody deposited funds, while direct wallet-to-wallet transfers retain user custody until sent. Never send recovery words or pay an unsolicited fee to unlock a claimed balance.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://www.sumcoin.org/report-a-scam/",
+        "https://www.sumcoin.org/sumcoin-marketplace/"
+      ]
+    },
+    {
+      "id": "faucet-compatibility",
+      "title": "Does a Sumcoin faucet work with my old Slice Wallet?",
+      "tags": [
+        "free sumcoin",
+        "faucet",
+        "claim coins",
+        "faucet stopped",
+        "hourly faucet",
+        "faucet balance",
+        "faucet payout"
+      ],
+      "text": "A faucet can only send coins to compatible receiving addresses on the network it supports. An older Slice Wallet address may not work with a faucet built for the current Sumcoin network. Faucet availability, claim limits, and amounts can change. Check the official wallet and service information instead of assuming historical faucet announcements still apply.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://www.sumcoin.org/about/"
+      ]
+    },
+    {
+      "id": "wallet-network-mismatch",
+      "title": "Why do my Slice Wallet and current Sumcoin Wallet show different balances?",
+      "tags": [
+        "different balance",
+        "wallet changed phones",
+        "after update lost coins",
+        "seed imported but zero",
+        "old wallet sync",
+        "wrong network",
+        "recovery words different",
+        "old address explorer"
+      ],
+      "text": "Older Slice Wallet and current Sumcoin Wallet may derive different addresses and may connect to different network backends. A displayed zero balance is not alone proof of lost coins. Identify the original wallet, check the appropriate public address history, and follow current official recovery or migration guidance. Never post a seed phrase or enter it into an unverified website.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://www.sumcoin.org/migrations/",
+        "https://github.com/sumcoinlabs/sumcoin_flutter"
       ]
     }
   ]
