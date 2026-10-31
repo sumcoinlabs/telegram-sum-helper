@@ -1,3 +1,12 @@
+## v0.0.20 — Natural market conversations and verified historical statistics (2026-10-31)
+
+- Use natural chat instead of marketing canned responses for price-history questions. Interpret the full-history all-time high from validated public SumcoinPrice OHLC points and give its recorded USD/BTC value and UTC date. Cache read-only results for 15 minutes; refuse unverified, malformed, unavailable or oversized API data rather than invent a price.
+- Preserve 20-minute, memory-only context scoped to a member and to the specific bot reply. Handle “What was the all-time high?”, “What about last year?”, French follow-ups and SUM/BTC comparison requests without requiring the coin name in every turn. Unrelated members cannot reuse a different member’s bare follow-up.
+- Add natural-language market replies in all 14 existing supported languages and end-to-end routing tests. Distinguish a historical index value from a guarantee of sale when relevant; avoid repetitive disclaimers and raw JSON links unless explicitly asked.
+- Stop advertising `/chart` and `/priceapi` in Telegram menus or public help (legacy aliases remain for compatibility). Keep verified `rate.slicewallet.org` live fiat quotes, Groq GPT-OSS 120B, quota enforcement, existing APIs and approved FAQ unchanged.
+- Add a local-only `scripts/audit-telegram-members.py` for analyzing the owner’s Telegram Desktop ZIP. It reports aggregate participation events by default and optionally writes a private CSV of message authors. A Telegram export is not a complete roster, and the script cannot re-add people or send unsolicited messages.
+- Preserve existing VM `.env`, credentials, history fingerprints, learning DB, reviewer queue and service settings. No raw user export, PII, API keys or server runtime data in the release.
+
 ## v0.0.19 — SumcoinPrice API and chart discovery (2026-10-31)
 
 - Add `/chart` and `/priceapi` with fixed, documented SumcoinPrice links: interactive charts, current USD snapshot (`/market.php`), SUM/USD 1-day history and SUM/BTC 1-day history (`/api/history.php`).

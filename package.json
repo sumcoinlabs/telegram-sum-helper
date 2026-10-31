@@ -1,6 +1,6 @@
 {
   "name": "telegram-sum-helper",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "private": true,
   "description": "Grounded, multilingual, continuously improving Sumcoin Telegram support bot",
   "type": "module",

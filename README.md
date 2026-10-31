@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml/badge.svg"></a>
-  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.19"><img alt="Version 0.0.19" src="https://img.shields.io/badge/version-0.0.19-blue"></a>
+  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.20"><img alt="Version 0.0.20" src="https://img.shields.io/badge/version-0.0.20-blue"></a>
   <img alt="Node.js 20.11 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20.11-339933?logo=nodedotjs&logoColor=white">
   <img alt="14 supported locales" src="https://img.shields.io/badge/locales-14-0A73B7">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green"></a>
@@ -73,3 +73,9 @@ systemctl --user restart telegram-sum-helper.service
 - Never share seed phrases, private keys, authentication codes, or wallet passwords with the bot.
 
 See [Operations](docs/OPERATIONS.md) for deployment, source synchronization, admin approval, storage paths and privacy details; see [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+### Natural market-history conversations (v0.0.20)
+
+In @sumcoins, ask for SUM charts, price history, the highest recorded index value, or historical performance in natural language. A relevant follow-up from the same member (or a reply to a specific bot message) retains market context for 20 minutes. For ATH, only validated data from `https://sumcoinprice.com/api/history.php?range=all&pair=usd` is used; the bot falls back to the chart if the API cannot be verified. No special public chart command is needed.
+
+For an offline, private aggregate audit of a Telegram Desktop export: `python3 scripts/audit-telegram-members.py /path/to/result.json.zip`. The optional `--private-csv /path/to/authors.csv` reports prior message authors **only**; it is not a list of people who left.

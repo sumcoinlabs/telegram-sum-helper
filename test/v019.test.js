@@ -15,7 +15,7 @@ import { createHandler } from '../src/bot.js';
 import { VERSION } from '../src/version.js';
 
 test('v019 version, safe allowlist and nonfabricated official fixed endpoints',()=>{
-  assert.equal(VERSION,'0.0.19');
+  assert.equal(VERSION,'0.0.20');
   assert.equal(SUMCOINPRICE.website,'https://sumcoinprice.com/');
   assert.equal(SUMCOINPRICE.market,'https://sumcoinprice.com/market.php');
   assert.equal(SUMCOINPRICE.history,'https://sumcoinprice.com/api/history.php?range=1d');
@@ -64,11 +64,11 @@ test('v019 full bot: public commands, group chart routing, admin, Groq untouched
   await handler(msg('/chart',1));assert.match(sent.at(-1).text,/https:\/\/sumcoinprice.com\//);
   await handler(msg('/priceapi',1));assert.match(sent.at(-1).text,/market.php/);assert.match(sent.at(-1).text,/history.php/);
   await handler(msg('/sources',1));assert.match(sent.at(-1).text,/sumcoinprice.com/);
-  await handler(msg('Show me Sumcoin price history'));assert.match(sent.at(-1).text,/Interactive chart/);
+  await handler(msg('Show me Sumcoin price history'));assert.match(sent.at(-1).text,/sumcoinprice\.com\/history\//);
   assert.equal(groqCalls,0);
   await handler(msg('Show me the Sumcoin price API',8));assert.match(sent.at(-1).text,/market.php/);
-  await handler(msg('Montre-moi le graphique historique de Sumcoin',9));assert.match(sent.at(-1).text,/Graphique interactif/);
-  await handler(msg('Where can I see the Sumcoin price chart?',1));assert.match(sent.at(-1).text,/Interactive chart/); // explicit admin question
+  await handler(msg('Montre-moi le graphique historique de Sumcoin',9));assert.match(sent.at(-1).text,/sumcoinprice\.com\/history\//);
+  await handler(msg('Where can I see the Sumcoin price chart?',1));assert.match(sent.at(-1).text,/sumcoinprice\.com\/history\//); // explicit admin question
   const count=sent.length;
   await handler(msg('Sumcoin price chart looks great',1));assert.equal(sent.length,count);
   await handler(msg('What is Sumcoin price in USD?',8));assert.equal(priceCalls,1);assert.match(sent.at(-1).text,/LIVE TEST RATE/);

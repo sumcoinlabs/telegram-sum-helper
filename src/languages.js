@@ -12,9 +12,9 @@ const WORDS = {
   pt:'quero preciso retirar dinheiro carteira saldo como posso sacar vender onde quanto minha minhas enviar receber obrigado saque pix reais pelo pela calculado calculada criptomoedas cotação cotacao valor preço preco grafico historico mostra índice indice funciona funcionamento mercado brasileiro do da dos das o os um uma meu meus você voces',
   fr:'comment puis peux retirer argent portefeuille solde pourquoi avec vous mon mes envoyer recevoir vendre achat combien vaut valent valeur prix quel quelle aider bonjour montre montrez graphique courbe historique evolution voir ou trouve explique expliquer explication simplement fonctionne fonctionnement comment est un une du de des les pour indice cours euro euros différence differente different garantie garanti garantir taux change peut peux signifie cest estce que voudrais savoir pourrais combien',
   de:'wie kann ich meine mein geld abheben brieftasche guthaben warum senden empfangen verkaufen hallo bitte hilfe auszahlen erklären erklaren einfach funktioniert preis unterschied garantie bedeutet erklärung erklarung',
-  it:'come posso prelevare soldi portafoglio saldo perché perche mio mia inviare ricevere vendere ciao aiuto quanto spiega spiegami semplicemente funziona funzionamento prezzo euro indice differenza garanzia',
-  tr:'nasıl nasil para çekebilirim cekebilirim cüzdan cuzdan bakiyem nerede göndermek gondermek satmak yardım yardim açıkla acikla açıklama aciklama çalışır calisir fiyat fark garanti',
-  id:'bagaimana bisa menarik uang dompet saldo saya mengirim menerima jual tolong berapa kenapa jelaskan sederhana bekerja harga perbedaan jaminan indeks'
+  it:'come posso prelevare soldi portafoglio saldo perché perche mio mia inviare ricevere vendere ciao aiuto quanto spiega spiegami semplicemente funziona funzionamento prezzo euro indice differenza garanzia dove vedere lo storico massimo quale',
+  tr:'nasıl nasil para çekebilirim cekebilirim cüzdan cuzdan bakiyem nerede göndermek gondermek satmak yardım yardim açıkla acikla açıklama aciklama çalışır calisir fiyat fark garanti geçmişini gecmisini grafik tarihsel',
+  id:'bagaimana bisa menarik uang dompet saldo saya mengirim menerima jual tolong berapa kenapa jelaskan sederhana bekerja harga perbedaan jaminan indeks di mana melihat riwayat',
 };
 const WORDSETS=Object.fromEntries(Object.entries(WORDS).map(([k,v])=>[k,new Set(v.split(' '))]));
 const fold=s=>String(s||'').toLocaleLowerCase('und').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
