@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.8 — 2026-10-31
+
+- Natural-language support in the authorized Sumcoin group, enabled deliberately by `/mode reply`, not by installation.
+- Verified admin exclusion and anonymous/channel-message exclusion. Reviewer enrollment for `@SumcoinAdmin` through a private `/start` with current group-admin authorization.
+- Bounded redacted review queue, private notifications, `/review`, `/answer` and `/skip`. Reviewed source-backed answers become approved knowledge and reply to the original group message.
+- Nonintrusive opt-out by replying “no thanks” to the bot or `/stop`, with `/resume` available.
+- Twenty-minute unanswered-question fallback shares only reviewed related information or an official link; it never invents the missing answer.
+- Reviewed knowledge base expanded from 40 to 52 topics with developer/UTXO/explorer/security detail; 14-language support-workflow messages.
+- Strict manual YouTube transcript import for the supplied video; video evidence remains unreviewed until a verified administrator approves specific claims. The video transcript was not retrievable at build time.
+- Existing 14-language rate handling, Telegram 429 pacing, privacy filters, and no-paid-API behavior retained.
+
+
 ## 0.0.7 — 2026-10-31
 
 - Rewrote high-traffic answers to describe the Sumcoin Index as a **peer-to-peer reference rate**: trades are arranged directly between participants. Removed repeating generic liquidity, bank and withdrawal cautions from unrelated queries while preserving recovery-key and scam protections where relevant.

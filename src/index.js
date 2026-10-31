@@ -4,6 +4,7 @@ import { Knowledge } from './knowledge.js';
 import { Learning } from './learning.js';
 import { ConversationAI } from './ai.js';
 import { createHandler } from './bot.js';
+import { Escalations } from './escalations.js';
 
 const token=process.env.TELEGRAM_BOT_TOKEN?.trim();
 const config={allowedChatUsername:(process.env.ALLOWED_CHAT_USERNAME||'').trim().replace(/^@/,''),allowedChatId:process.env.ALLOWED_CHAT_ID||'',initialMode:process.env.INITIAL_MODE||'observe',userCooldownHours:Number(process.env.USER_COOLDOWN_HOURS||6),topicCooldownSeconds:Number(process.env.TOPIC_COOLDOWN_SECONDS||120),autoAI:process.env.AUTO_AI==='true',learningEnabled:process.env.LEARNING_ENABLED!=='false',allowPrivateChats:process.env.ALLOW_PRIVATE_CHATS==='true',aiDailyLimit:Number(process.env.AI_DAILY_LIMIT||100)};
@@ -16,14 +17,18 @@ const knowledge=new Knowledge({learned:learning.data.approved});
 const ai=new ConversationAI({apiKey:process.env.OPENAI_API_KEY||'',model:process.env.OPENAI_MODEL||'gpt-4.1-mini'});
 const client=new TelegramClient(token);
 const me=await client.getMe();
-console.log(`Sumcoin Helper v0.0.7: @${me.username} | authorized group ${config.allowedChatUsername||config.allowedChatId} | mode ${state.data.mode} | ${knowledge.documents().length} knowledge entries | AI ${ai.apiKey?'configured':'retrieval-only'}`);
+if(!me.can_read_all_group_messages)console.warn('Bot privacy may prevent free-form group messages unless the bot is a group administrator. See README auto-support setup.');
+console.log(`Sumcoin Helper v0.0.8: @${me.username} | authorized group ${config.allowedChatUsername||config.allowedChatId} | mode ${state.data.mode} | ${knowledge.documents().length} knowledge entries | AI ${ai.apiKey?'configured':'retrieval-only'}`);
 await client.deleteWebhook();
 try{await client.setMyCommands();}catch(e){console.error('Optional command menu failed:',e.message);}
 for(const language of ['es','pt','fr','de','it','ru','zh','ar','hi','ja','ko','tr','id']){try{await client.setMyCommands(language);}catch(e){console.error(`Optional ${language} command menu failed:`,e.message);}}
-const handle=createHandler({client,state,config,botUsername:me.username||'',knowledge,learning,ai});
+const escalations=new Escalations(process.env.ESCALATION_FILE||'./data/escalations.json');
+const handle=createHandler({client,state,config,botUsername:me.username||'',knowledge,learning,ai,escalations});
+await handle.tick();
 let running=true;for(const sig of ['SIGINT','SIGTERM'])process.on(sig,()=>{running=false;});
 let offset=null,failures=0;
 while(running){try{
   const updates=await client.getUpdates(offset);failures=0;
   for(const u of updates){offset=u.update_id+1;try{await handle(u.message);}catch(e){console.error(`Message ${u.update_id} failed:`,e.message);}}
+  await handle.tick();
 }catch(e){const delay=Math.min(60000, e.retryAfter?e.retryAfter*1000:1000*2**Math.min(6,++failures));console.error('Polling failure:',e.message);if(running)await new Promise(r=>setTimeout(r,delay));}}

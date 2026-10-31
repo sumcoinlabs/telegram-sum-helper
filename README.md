@@ -1,10 +1,85 @@
 # Telegram Sum Helper
 
-**v0.0.7 — multilingual Sumcoin community support bot (Node.js 20+, no paid API required).**
+**v0.0.8 — natural-language, free Sumcoin community support with human review.**
 
-`telegram-sum-helper` is a source-grounded first-line assistant for the Sumcoin Telegram community. It is **not a bank, exchange, wallet recovery service, blockchain node, or human administrator**. It cannot send or access coins. It never guarantees that Sumcoin's index-derived USD reference value can be converted into cash. It uses Telegram's official Bot API and native Node.js `fetch` with **no third-party runtime packages**. The optional OpenAI integration is disabled unless `OPENAI_API_KEY` is configured.
+The bot now assists ordinary group conversations without requiring `/ask`. It answers recognized Sumcoin support questions using reviewed sources, avoids administrator messages and ordinary chat, and sends unfamiliar questions to a verified `@SumcoinAdmin` account for private review. It remains a **retrieval-based help system, not a trained LLM**. OpenAI remains completely optional. The existing 14-language UI, P2P rates, read-only blockchain lookups, and historical-data safeguards are retained.
 
-**Deployment status:** v0.0.5 was confirmed running in the authorized group under Node.js 24.22.2 with 125 searchable knowledge entries (40 reviewed topics plus 85 synchronized documents). v0.0.6 fixed the USD array-rate parser. v0.0.7 adds localized peer-to-peer rates and softer wording; install the new version before testing. Existing `observe` mode persists unless a verified admin changes it.
+## v0.0.8 activation — important order
+
+1. **Deploy** v0.0.8 as existing `electrumbtc1`. The existing persisted `observe` mode stays off until you deliberately enable it.
+2. For dependable admin exclusion, **make `@SumcoinHelperBot` a group administrator with the minimum available privileges**. Telegram does not guarantee `getChatMember` for other users unless the bot is an administrator. An alternative is disabling BotFather group privacy (`/setprivacy`) and removing/re-adding the bot, but the implementation intentionally skips automatic answers if it cannot verify a member's admin status. The bot needs to see ordinary messages; Telegram's default privacy mode blocks them. Do not grant dangerous moderation permissions.
+3. From the real group-admin account `@SumcoinAdmin`, open a **private** chat with `@SumcoinHelperBot` and send `/start`. The bot checks this handle and current group-administrator status, then registers the *numeric Telegram account ID* for private notifications. The bot cannot initiate a private chat with an account that has not started it.
+4. From an administrator account inside `@sumcoins`, send `/mode reply`. Only after this will ordinary support questions receive automatic replies. `/mode observe` returns it to observation.
+
+An ordinary member can now write **“Why are my Sumcoin coins not showing?”**, **“How does staking work in Sumcoin?”** or **“What's the current Sumcoin price today?”** without a command. Informal conversations, non-support chatter, bot messages, messages posted as a channel/anonymous admin, and regular admin posts are excluded. Explicit commands remain available.
+
+### No unwanted replies
+
+A member can **reply directly to an assistant message with `No thanks`**, `No gracias` or `Não preciso`, or use `/stop@SumcoinHelperBot`. The assistant then stops replying proactively to that member for 24 hours (stored in memory). `/resume@SumcoinHelperBot` reenables help immediately. Manual `/ask` or other explicit commands still work. The bot doesn't interpret an unrelated person's “no thanks” in a normal chat as an opt-out.
+
+### Human escalation and unattended fallback
+
+If the bot cannot verify a specific technical answer, it queues a **short, sanitized question**, sends a short acknowledgement, and privately notifies the verified `@SumcoinAdmin` account with a queue number. Only the account that enrolled and is still an active group admin can receive these messages. Private review commands:
+
+```
+/review
+/answer 12 | Verified answer here | https://github.com/sumcoinlabs/sumcoin
+/skip 12
+```
+
+The answer is admitted to the approved fact library only if the existing source/domain and safety filters accept it. The bot then posts that approved answer as a reply to the member's original group message. **Messages are not auto-trained as facts.** If a question remains unanswered for **20 minutes**, a timer based on Telegram polling posts the closest *verified* guidance with an explicit note that the exact answer is not yet confirmed. The review remains open for an admin. If nothing is verified, the bot provides an official reference instead of pretending to know. Notifications are deduplicated and capped; normal automatic replies have short per-user and per-topic cooldowns.
+
+For privacy, the queue persists the redacted question (up to 240 characters), group/chat message identifiers, status, and timestamps for up to seven days, **not the group member's Telegram user ID**. Review-member cooldown identifiers exist in process memory only. The reviewer's numeric Telegram ID is saved locally in `data/escalations.json` with private file permissions. `.env` and `data/` are never committed.
+
+### Knowledge expansion and YouTube transcripts
+
+The reviewed FAQ library expands to **52 topics**, adding current Core/mobile distinctions, UTXO concepts, confirmed/unconfirmed explorer data, sumcoinlib transaction-format compatibility, witness activation caveats, RPC security, and source age/history. Existing `npm run sync` sources stay in place.
+
+The submitted video [`_dq55ykFDHs`](https://youtu.be/_dq55ykFDHs) can be indexed **once its transcript is supplied**. This release intentionally does **not** assert any video facts: YouTube's transcript could not be reliably retrieved and verified. Save your copied YouTube transcript as a plain-text UTF-8 `.txt` file, copy it to a path on the VM, then run:
+
+```
+cd /home/electrumbtc1/telegram-sum-helper
+npm run import:video -- /home/electrumbtc1/transcripts/sumcoin-video.txt
+systemctl --user restart telegram-sum-helper.service
+```
+
+This imports transcript excerpts as **unreviewed reference material**, attributed to the video, and lets `/find` discover them. It does not automatically promote claims (possibly describing older software) into trusted current facts. A verified administrator can promote specific sourced statements through the normal approval workflow.
+
+### Releasing v0.0.8
+
+On your Mac after downloading the ZIP to Downloads:
+
+```
+mkdir -p ~/Documents/telegram-sum-helper-v0.0.8 && \
+unzip -oq ~/Downloads/telegram-sum-helper-v0.0.8.zip -d ~/Documents/telegram-sum-helper-v0.0.8 && \
+cd ~/Documents/telegram-sum-helper-v0.0.8/telegram-sum-helper && \
+bash scripts/push-update.sh
+```
+
+On the VM as `electrumbtc1`, once the GitHub push completes:
+
+```
+bash <<'SH'
+set -Eeuo pipefail
+cd /home/electrumbtc1/telegram-sum-helper
+export NVM_DIR="$HOME/.nvm"
+source "$NVM_DIR/nvm.sh"
+nvm use 24 >/dev/null
+git pull --ff-only origin main
+test "$(node -p "require('./package.json').version")" = '0.0.8'
+npm run check
+npm run sync
+systemctl --user restart telegram-sum-helper.service
+systemctl --user --no-pager status telegram-sum-helper.service
+journalctl --user -u telegram-sum-helper.service -n 15 --no-pager
+SH
+```
+
+The bot starts in the *persisted* previous mode; the release does not automatically enable unsolicited replies. Existing state, learning, and API credentials remain unchanged.
+
+---
+
+## Earlier version: v0.0.7
 
 ## New in v0.0.7 — clearer peer-to-peer rates, localized currencies, and less repetition
 

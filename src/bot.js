@@ -7,6 +7,8 @@ import { offlineAnswer,isContextualFollowup,reviewedFact } from './offline.js';
 import { guideReply } from './guides.js';
 import { livePrice,liveTransaction,liveAddress } from './live.js';
 import {ui,preferredCurrency} from './locale-ui.js';
+import {needsHumanReview,isDismissal,REVIEW_USERNAME} from './escalations.js';
+import {supportUI} from './support-ui.js';
 
 export function isCurrentPriceQuestion(q){
   const text=String(q||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').normalize('NFC');
@@ -17,8 +19,8 @@ export function isCurrentPriceQuestion(q){
   return when.test(text)&&price.test(text)&&!calculation.test(text);
 }
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
-const HELP=`Sumcoin Helper v0.0.7 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
-/currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
+const HELP=`Sumcoin Helper v0.0.8 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
+/currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n/stop — pause automatic help for 24 hours; /resume — turn it on again\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid, /queue\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
 export function commandFrom(text,botUsername=''){
   const m=/^\/([a-z_]+)(?:@([a-z0-9_]+))?(?:\s+([\s\S]*))?$/i.exec(String(text||'').trim());
   if(!m||(m[2]&&m[2].toLowerCase()!==botUsername.toLowerCase()))return null;
@@ -41,12 +43,52 @@ export function isDirectedMention(text,botUsername){
   const start=new RegExp('^\\s*(?:(?:hey|hi|hello|hola|olá)[!,.\\s]+)?@'+escaped+'\\b','i');
   return start.test(text)||/[?¿؟？]/u.test(text);
 }
-export function createHandler({client,state,config,botUsername,knowledge,learning,ai,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress}}){
-  const preferences=new Map(),currencyPreferences=new Map(),seenReplies=new Map(),topicHistory=new Map();
+export function createHandler({client,state,config,botUsername,knowledge,learning,ai,escalations=null,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress}}){
+  const preferences=new Map(),currencyPreferences=new Map(),seenReplies=new Map(),topicHistory=new Map(),mutedMembers=new Map(),adminCache=new Map();
   const now=()=>Date.now();
   async function send(m,text){return client.sendMessage(m,String(text).slice(0,3500));}
   async function admin(m){if(!m.from?.id||!inAllowedGroup(m.chat,config))return false;
-    try{return ['administrator','creator'].includes((await client.getChatMember(m.chat.id,m.from.id))?.status);}catch{return false;}}
+    const key=`${m.chat.id}:${m.from.id}`,cached=adminCache.get(key);
+    if(cached&&cached.until>now())return cached.value;
+    try{
+      const isAdmin=['administrator','creator'].includes((await client.getChatMember(m.chat.id,m.from.id))?.status);
+      adminCache.set(key,{value:isAdmin,until:now()+120_000});return isAdmin;
+    }catch{return true;} // On verification failure, do NOT autorespond to a possible administrator.
+  }
+  async function reviewer(m){
+    if(m.from?.username?.toLowerCase()!==REVIEW_USERNAME.toLowerCase()||!m.from?.id)return false;
+    const groupId=config.allowedChatId||`@${config.allowedChatUsername}`;
+    try{return ['administrator','creator'].includes((await client.getChatMember(groupId,m.from.id))?.status);}catch{return false;}
+  }
+  function isMuted(m){const key=`${m.chat.id}:${m.from?.id||0}`;return (mutedMembers.get(key)||0)>now();}
+  function setMuted(m,enabled){const key=`${m.chat.id}:${m.from?.id||0}`;if(enabled)mutedMembers.set(key,now()+24*3600_000);else mutedMembers.delete(key);if(mutedMembers.size>500)for(const [k,t] of mutedMembers)if(t<now())mutedMembers.delete(k);}
+  const sender=m=>({chat:{id:m.chatId},message_id:m.messageId});
+  async function notifyUnanswered(item){
+    if(!escalations?.data.adminId||!client.sendDirect||item.notified)return;
+    // A saved numeric ID is not enough: reverify admin membership before private delivery.
+    try {const reviewer=await client.getChatMember(config.allowedChatId||`@${config.allowedChatUsername}`,escalations.data.adminId);
+      if(!['administrator','creator'].includes(reviewer?.status))return;
+      if(reviewer.user?.username&&reviewer.user.username.toLowerCase()!==REVIEW_USERNAME.toLowerCase())return;
+    } catch {return;}
+    const msg=`Sumcoin Helper needs @${REVIEW_USERNAME} (question #${item.id})\n\n${item.question}\n\nReply here with:\n/answer ${item.id} | verified answer | https://sumcoin.org/official-source\n\nOr /skip ${item.id}. No member ID or recovery data is included.`;
+    try{await client.sendDirect(escalations.data.adminId,msg);escalations.markNotified(item.id);}catch(e){console.warn('Admin review DM unavailable:',e.message);}
+  }
+  async function tick(){
+    if(!escalations)return;
+    for(const item of escalations.pending().filter(x=>!x.notified).slice(0,5))await notifyUnanswered(item);
+    for(const item of escalations.due()){
+      // Twenty-minute fallback: offer only matching reviewed information, never invent answers.
+      const docs=knowledge.search(item.question,{limit:5});
+      const first=docs.find(x=>x.kind==='curated'||x.kind==='admin-approved');
+      const supported=first&&first.score>=15&&first.coverage>=0.25&&!needsHumanReview(item.question);
+      const lang=item.lang;
+      const intro=supportUI(lang,'waiting');
+      const info=supported?`\n\n${supportUI(lang,'related')}: ${String(reviewedFact(first,lang)||first.body||'').slice(0,600)}\n${citationUrls([first],1)[0]||'https://sumcoin.org/'}`:`\n\n${supportUI(lang,'official')}: https://sumcoin.org/`;
+      const ending=`\n\n@${REVIEW_USERNAME} — review pending.`;
+      try{await client.sendMessage(sender(item),intro+info+ending);escalations.mark(item.id,'fallback');}catch(e){console.error('Delayed support reply failed:',e.message);}
+    }
+  }
+
   function languageFor(m,q){
     const key=String(m.from?.id||'');const pref=preferences.get(key);
     if(pref && pref.until<=now())preferences.delete(key);
@@ -109,6 +151,11 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     if(isCurrentPriceQuestion(q))return send(m,await liveOps.price(priceOptions(m,lang)));
     const retrievalQuery=ai.apiKey?ai.retrievalQuestion(key,q):q;
     const docs=knowledge.search(contextId?knowledge.find(contextId)?.title||q:retrievalQuery,{limit:12});
+    if(escalations&&!automatic&&inAllowedGroup(m.chat,config)&&!await admin(m)&&
+       (needsHumanReview(q)||!docs.some(d=>(d.kind==='curated'||d.kind==='admin-approved')&&d.score>=12&&d.coverage>=0.25))){
+      const item=escalations.enqueue(m,q,lang);
+      if(item){await notifyUnanswered(item);return send(m,supportUI(lang,'queued'));}
+    }
     if(contextId){
       const related=knowledge.find(contextId);
       if(related){const i=docs.findIndex(d=>d.id===contextId);if(i>=0)docs.splice(i,1);docs.unshift(related);}
@@ -124,9 +171,34 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     }catch(err){console.error('AI unavailable:',err.message);
       return send(m,`${t(lang,'temporarily')}\n\n${article(docs[0].id,lang)}`);}
   }
-  return async function handle(m){
+  const handle=async function handle(m){
     if(!m?.chat||!m.text||m.from?.is_bot)return;
     const group=inAllowedGroup(m.chat,config),dm=m.chat.type==='private';
+    if(dm && commandFrom(m.text,botUsername)?.name==='start' && m.from?.username?.toLowerCase()===REVIEW_USERNAME.toLowerCase()){
+      if(!escalations||!await reviewer(m))return send(m,'Review setup requires the @SumcoinAdmin account to be an administrator in @sumcoins.');
+      escalations.register(m.from);
+      await send(m,`Review notifications are enabled for @${REVIEW_USERNAME}. Use /review to see the queue and /answer ID | ANSWER | OFFICIAL_URL to teach the bot.`);
+      for(const item of escalations.pending().filter(x=>!x.notified).slice(0,5))await notifyUnanswered(item);
+      return;
+    }
+    if(dm&&escalations&&await reviewer(m)&&escalations.isRegistered(m.from)){
+      const c=commandFrom(m.text,botUsername);if(!c)return;
+      if(c.name==='review')return send(m,escalations.pending().map(x=>`#${x.id}: ${x.question} (${x.status})`).join('\n\n')||'No unanswered questions.');
+      if(c.name==='skip')return send(m,escalations.mark(Number(c.arg),'closed')?`Review #${c.arg} closed.`:'Review ID not found.');
+      if(c.name==='answer'){
+        const parts=c.arg.split('|').map(x=>x.trim());
+        if(parts.length!==3||!/^\d+$/.test(parts[0]))return send(m,'Usage: /answer ID | verified answer | https://sumcoin.org/official-source');
+        const item=escalations.get(parts[0]);if(!item||item.status==='closed')return send(m,'Question not found or already closed.');
+        const id=learning.queue(item.question,parts[1],parts[2],'admin-escalation');
+        if(!id||!learning.approve(id))return send(m,'Answer rejected. Supply a safe, sourced answer from an approved official domain.');
+        knowledge.learned=learning.data.approved;
+        const approved=learning.data.approved.find(x=>x.id===id);
+        try{await client.sendMessage(sender(item),`${approved.text}\n\nSource: ${parts[2]}`);}catch(e){console.error('Approved answer group delivery failed:',e.message);return send(m,`Approved knowledge #${id}, but delivery failed. Check the group.`);}
+        escalations.mark(item.id,'closed');return send(m,`Approved and answered question #${item.id}. Future matching questions can use the reviewed answer.`);
+      }
+      if(c.name==='start'||c.name==='help')return send(m,'Admin review is active. Use /review, /answer ID | answer | official URL, or /skip ID.');
+      return;
+    }
     if(!group&&!(dm&&config.allowPrivateChats))return;
     if(m.date&&now()/1000-m.date>900)return;
     const command=commandFrom(m.text,botUsername);
@@ -147,6 +219,7 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
 /github <keywords>
 /sources
 /feedback
+/stop | /resume
 
 ${ui(lang,'safety')}`);
       if(['lang','language'].includes(name)){
@@ -182,6 +255,9 @@ ${ui(lang,'safety')}`);
         if(!state.shouldReply(m,`live-address:${m.from?.id||'unknown'}`,0,20))return;
         return send(m,await liveOps.address(arg,{lang}));
       }
+      if(name==='stop'){if(!group)return;setMuted(m,true);return send(m,supportUI(lang,'muted'));}
+      if(name==='resume'){if(!group)return;setMuted(m,false);return send(m,supportUI(lang,'resumed'));}
+      if(name==='queue'&&group&&await admin(m))return send(m,escalations?.stats()||'Review queue not configured.');
       if(name==='sources')return send(m,'Official references: https://sumcoin.org/ | https://sumcoinwallet.org/ | https://github.com/sumcoinlabs/sumcoin | https://github.com/sumcoinlabs/sumcoin_flutter\n/find searches cached official documents, not arbitrary websites.');
       if(name==='rules')return send(m,'Questions in your own language are welcome. Please keep discussion civil, never share recovery words or private keys, and avoid unsolicited financial offers. Official announcements may remain in English.');
       if(COMMAND_TOPICS[name])return send(m,article(COMMAND_TOPICS[name],lang));
@@ -234,6 +310,13 @@ ${ui(lang,'safety')}`);
       return;
     }
     if(!group)return;
+    // Dismiss an accidental response, but never interpret ordinary “no thanks” chat as a command.
+    const repliedToBotForDismiss=m.reply_to_message?.from?.is_bot&&m.reply_to_message.from.username?.toLowerCase()===botUsername.toLowerCase();
+    const directedToBot=isDirectedMention(m.text,botUsername);
+    const dismissalText=m.text.replace(new RegExp('@'+botUsername,'ig'),'').trim();
+    if((repliedToBotForDismiss||directedToBot)&&isDismissal(dismissalText)){
+      setMuted(m,true);return send(m,supportUI(lang,'dismissed'));
+    }
     // Explicit bot follow-ups must work even if the user's question is "What about fees?"
     const mention=isDirectedMention(m.text,botUsername);
     const repliedToBot=m.reply_to_message?.from?.username?.toLowerCase()===botUsername.toLowerCase() && m.reply_to_message?.from?.is_bot===true;
@@ -245,19 +328,36 @@ ${ui(lang,'safety')}`);
       if(source&&isSupportMessage(m.reply_to_message.text))learning.queue(m.reply_to_message.text,m.text,source,'admin-reply');
     }
     if(!isSupportMessage(m.text))return;
+    // No automatic messages to admins, anonymous admins, channel posts or opted-out members.
+    if(m.sender_chat||await admin(m)||isMuted(m))return;
     const {topic,language}=classify(m.text,m.from?.language_code);
     if(config.learningEnabled!==false)learning.observe(m.text,topic,language);
     if(topic)state.record(topic,false);
     state.recordLanguage(language);
     if(state.data.mode!=='reply')return;
-    const recognized=topic||learning.learnedTopic(m.text);
-    if(!recognized){
-      if(config.autoAI&&ai.apiKey&&knowledge.search(m.text,{limit:1})[0]?.score>=10)return ask(m,m.text,{automatic:true});
+    if(isCurrentPriceQuestion(m.text)){
+      if(state.shouldReply(m,'auto:live-price',0.015,4))await send(m,await liveOps.price(priceOptions(m,languageFor(m,m.text))));
       return;
     }
-    if(!knowledge.find(recognized))return;
-    if(!state.shouldReply(m,recognized,config.userCooldownHours,config.topicCooldownSeconds))return;
-    await send(m,article(recognized,languageFor(m,m.text)));
-    state.record(recognized,true);
+    const detected=topic||learning.learnedTopic(m.text);
+    const docs=knowledge.search(m.text,{limit:5});
+    const topReviewed=docs.find(x=>x.kind==='curated'||x.kind==='admin-approved');
+    const recognized=detected&&knowledge.find(detected)?detected:topReviewed?.score>=18&&topReviewed?.coverage>=0.48?topReviewed.id:null;
+    if(recognized&&!needsHumanReview(m.text)){
+      // Short per-user / per-group cooldown rather than blocking support for six hours.
+      if(!state.shouldReply(m,`auto:${recognized}`,0.015,4))return;
+      if(isCurrentPriceQuestion(m.text))await send(m,await liveOps.price(priceOptions(m,languageFor(m,m.text))));
+      else await send(m,article(recognized,languageFor(m,m.text)));
+      state.record(recognized,true);return;
+    }
+    if(!escalations)return;
+    // Ask privately only for meaningful, unclassified support questions (bounded and redacted).
+    const item=escalations.enqueue(m,m.text,languageFor(m,m.text));
+    if(!item)return;
+    await notifyUnanswered(item);
+    // One short acknowledgement, with no misleading claims about the answer.
+    await send(m,`I’m checking this with @${REVIEW_USERNAME}. If it remains unanswered, I’ll share the closest verified information here.`);
   };
+  handle.tick=tick;
+  return handle;
 }

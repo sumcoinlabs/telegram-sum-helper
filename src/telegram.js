@@ -46,6 +46,7 @@ export class TelegramClient {
   }
 
   getMe() { return this.call('getMe'); }
+  sendDirect(chatId, text) { return this.call('sendMessage', {chat_id:chatId,text:String(text).slice(0,3500),link_preview_options:{is_disabled:true}}); }
   deleteWebhook() { return this.call('deleteWebhook', { drop_pending_updates: false }); }
   getUpdates(offset) {
     return this.call('getUpdates', {
@@ -122,6 +123,8 @@ export class TelegramClient {
       { command: 'sources', description: 'Verified Sumcoin information sources' },
       { command: 'cashout', description: 'USD index value vs cash withdrawal' },
       { command: 'feedback', description: 'Report a bot answer' },
+      { command: 'stop', description: 'Pause automatic replies for 24 hours' },
+      { command: 'resume', description: 'Resume automatic support replies' },
       { command: 'migration', description: 'Old Slice / PoW to current wallet' },
       { command: 'wallet', description: 'Mobile wallet basics' },
       { command: 'staking', description: 'Proof-of-stake and minting' },

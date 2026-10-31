@@ -4,6 +4,7 @@ import {retrievalTerms} from './classify.js';
 
 export const CURATED_FILE = new URL('../knowledge/curated.json', import.meta.url);
 export const SYNC_FILE = new URL('../data/synced.json', import.meta.url);
+export const VIDEO_FILE = new URL('../data/video-transcripts.json', import.meta.url);
 const STOP = new Set('a an the is are was were be been to in on at for my me i it of we you your and or do does did can could how what why where when who this that with from some any there please help like have has had about tell would want need get very just more into by through does they them are our an as should my he she an 100 200'.split(' '));
 const ES = {retirar:'withdraw',sacar:'withdraw',dinero:'money',dolares:'usd',billetera:'wallet',monedero:'wallet',saldo:'balance',vender:'sell',comprar:'buy',como:'how',puedo:'can',sumcoin:'sumcoin',monedas:'coins',perdido:'missing',perdi:'missing',recuperar:'recover',frase:'phrase',semilla:'seed',enviar:'send',recibir:'receive',estafa:'scam',cuanto:'how',por:'for',favor:'please',recompensas:'staking',apostar:'staking',recompensa:'staking'};
 export function normalize(text) {
@@ -19,13 +20,15 @@ export class Knowledge {
   constructor(options={}) {
     this.curated = readJson(options.curatedFile||CURATED_FILE,{articles:[]}).articles;
     this.synced = readJson(options.syncFile||SYNC_FILE,{documents:[]}).documents;
+    this.videos = readJson(options.videoFile||VIDEO_FILE,{documents:[]}).documents;
     this.learned = options.learned||[];
   }
   documents() {
     const primary = this.curated.map(a=>({...a,kind:'curated',body:a.text}));
     const learned = this.learned.filter(a=>a.status==='approved').map(a=>({...a,kind:'admin-approved',body:a.text}));
     const synced = this.synced.filter(a=>a.source&&a.text).map(a=>({...a,kind:'synced',body:a.text}));
-    return [...primary,...learned,...synced];
+    const videos=this.videos.filter(a=>a.source&&a.text).map(a=>({...a,kind:'video',body:a.text}));
+    return [...primary,...learned,...synced,...videos];
   }
   search(input,{limit=5}={}) {
     const terms = tokenizeSet(retrievalTerms(input)), q=normalize(input);
@@ -59,6 +62,7 @@ export class Knowledge {
       if(d.id==='buy'&&/where (?:can|do).*buy|exchange list|kiosk|atm|coinbase/.test(q))score+=6;
       if(d.kind==='curated')score*=1.2;
       if(d.kind==='synced')score*=0.72;
+      if(d.kind==='video')score*=0.45;
       const coverage=matched / Math.max(terms.length,1);
       if(score>=3 && (coverage>=0.16 || score>=8))scored.push({...d,score:Math.round(score*100)/100,coverage});
     }
@@ -69,7 +73,7 @@ export class Knowledge {
 export function citationUrls(docs,max=3){
   const found=[];
   for(const d of docs){for(const url of (d.sources||[d.source])){
-    if(url && /^https:\/\/(?:www\.)?(?:sumcoin\.org|sumcoinwallet\.org|sumcoinindex\.com|github\.com|raw\.githubusercontent\.com|docs\.sumcoin\.org|t\.me)(?:\/|$)/i.test(url) && !found.includes(url))found.push(url);
+    if(url && (/^https:\/\/(?:www\.)?(?:sumcoin\.org|sumcoinwallet\.org|sumcoinindex\.com|github\.com|raw\.githubusercontent\.com|docs\.sumcoin\.org|t\.me)(?:\/|$)/i.test(url) || url==='https://www.youtube.com/watch?v=_dq55ykFDHs') && !found.includes(url))found.push(url);
     if(found.length>=max)return found;
   }}return found;
 }

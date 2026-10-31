@@ -738,6 +738,183 @@
         "https://www.sumcoin.org/sumcoin-marketplace/",
         "https://www.sumcoin.org/report-a-scam/"
       ]
+    },
+    {
+      "id": "core-wallet-vs-mobile",
+      "title": "What is the difference between Sumcoin Core and mobile Sumcoin Wallet?",
+      "tags": [
+        "core vs mobile wallet",
+        "desktop core wallet",
+        "staking in mobile",
+        "full node"
+      ],
+      "text": "Sumcoin Core is desktop/node software that participates in the Sumcoin proof-of-stake network. Mobile Sumcoin Wallet uses a lightweight Electrum-style backend for sending and receiving; mobile wallet operation should not be confused with Core minting. Use the compatible app for the task and verify releases before updating.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoin",
+        "https://github.com/sumcoinlabs/sumcoin_flutter"
+      ]
+    },
+    {
+      "id": "utxo",
+      "title": "Why do Sumcoin transactions have inputs, outputs and change?",
+      "tags": [
+        "utxo",
+        "unspent transaction output",
+        "tx input",
+        "transaction output",
+        "change output"
+      ],
+      "text": "Sumcoinlib works with UTXO-based transaction construction. A transaction spends previous unspent outputs to fund new outputs; an additional change output can return remainder to a wallet-controlled address. An output address is public information, not a recovery key.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoinlib",
+        "https://github.com/sumcoinlabs/insight-sum-api"
+      ]
+    },
+    {
+      "id": "core-rpc-security",
+      "title": "Should I expose Sumcoin Core RPC to the internet?",
+      "tags": [
+        "rpc password",
+        "rpc port",
+        "core rpc exposure",
+        "rpc security"
+      ],
+      "text": "Sumcoin Core RPC is an administrative interface to a running node, not a general public support endpoint. Keep it bound to a trusted local interface or controlled internal network, protect authentication, and avoid exposing it to random internet users. Use the public Insight API for read-only public blockchain queries.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoin/blob/main/doc/JSON-RPC-interface.md",
+        "https://github.com/sumcoinlabs/insight-sum-api"
+      ]
+    },
+    {
+      "id": "sumcoinlib-compat",
+      "title": "Will updating sumcoinlib change wallet recovery or transaction formats?",
+      "tags": [
+        "sumcoinlib 0.0.3 compatibility",
+        "bip32 Bitcoin seed",
+        "testnet prefixes",
+        "transaction version 1 2 time"
+      ],
+      "text": "The sumcoinlib v0.0.3 migration notes say its default BIP32 HMAC label remains “Bitcoin seed” to avoid breaking key derivation; changing this label would produce different keys. Transaction versions 1 and 2 serialize nTime while version 3 does not. Verify network prefixes and release notes before updating code.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoinlib/blob/master/MIGRATION.md",
+        "https://github.com/sumcoinlabs/sumcoinlib/blob/master/CHANGELOG.md"
+      ]
+    },
+    {
+      "id": "segwit-activation",
+      "title": "Can I assume witness or Taproot is live on Sumcoin mainnet?",
+      "tags": [
+        "segwit activation",
+        "taproot support",
+        "witness addresses",
+        "sumcoinlib witness"
+      ],
+      "text": "No. A library may contain code paths for witness or Taproot without those features being active on Sumcoin mainnet. Check current Sumcoin Core activation rules before using those address or transaction types in production.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoinlib/blob/master/README.md",
+        "https://github.com/sumcoinlabs/sumcoin"
+      ]
+    },
+    {
+      "id": "explorer-balance",
+      "title": "Does a public blockchain explorer prove my wallet app is synced?",
+      "tags": [
+        "explorer balance",
+        "wallet sync mismatch",
+        "address balance",
+        "confirmed explorer"
+      ],
+      "text": "A public explorer reports the chain history it has indexed for a public address. It does not prove that a phone wallet is connected or that every address in a recovery seed was derived correctly. Compare the expected public receiving address and its history; never provide seed words to someone troubleshooting a balance.",
+      "sources": [
+        "https://github.com/sumcoinlabs/insight-sum-api",
+        "https://sumcoinwallet.org/"
+      ]
+    },
+    {
+      "id": "explorer-unconfirmed",
+      "title": "What is the difference between confirmed and unconfirmed balance?",
+      "tags": [
+        "confirmed balance",
+        "unconfirmed balance",
+        "pending output",
+        "block confirmations"
+      ],
+      "text": "Insight exposes confirmed and unconfirmed balance information separately for a public address. An unconfirmed transaction has not yet received blockchain confirmations; one should check its transaction ID and network status instead of treating a temporarily missing display as permanent loss.",
+      "sources": [
+        "https://github.com/sumcoinlabs/insight-sum-api",
+        "https://sumcoin.space/"
+      ]
+    },
+    {
+      "id": "explorer-tx-status",
+      "title": "How can an explorer show transaction status?",
+      "tags": [
+        "transaction status",
+        "block height",
+        "transaction identifier",
+        "confirmations"
+      ],
+      "text": "The Sumcoin Insight API documents a transaction lookup using a 64-character transaction ID, with fields that can include confirmations and block height. If the explorer is unavailable or unsynchronized, do not infer that a transaction is absent from the blockchain.",
+      "sources": [
+        "https://github.com/sumcoinlabs/insight-sum-api"
+      ]
+    },
+    {
+      "id": "p2p-quote",
+      "title": "Is the Sumcoin index quote the same as a peer-to-peer offer?",
+      "tags": [
+        "index reference rate vs offer",
+        "p2p quote",
+        "peer to peer exchange rate"
+      ],
+      "text": "The Sumcoin Index provides a reference rate. People transacting SUM peer-to-peer can use it when discussing terms, but the actual exchange and agreed settlement are arranged by the participants. A reference quote is not itself an order book or binding offer.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://www.sumcoin.org/sumcoin-marketplace/"
+      ]
+    },
+    {
+      "id": "source-age",
+      "title": "Why do Sumcoin search results mention older proof-of-work mining?",
+      "tags": [
+        "proof of work older docs",
+        "migration historical mining",
+        "source updated"
+      ],
+      "text": "Some Sumcoin code and project documents reflect the original proof-of-work era. The current network uses proof-of-stake. For operational decisions, prefer verified current Core releases, supported wallet documentation, and current migration terms over old mining instructions.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoin",
+        "https://www.sumcoin.org/migrations/"
+      ]
+    },
+    {
+      "id": "developer-tests",
+      "title": "Has every platform and native integration of sumcoinlib been verified?",
+      "tags": [
+        "sumcoinlib test scope",
+        "native integration",
+        "flutter validation"
+      ],
+      "text": "The sumcoinlib v0.0.3 README reports Dart/Chrome tests and Flutter analysis for that release, while noting that native builds and live Core integration had not yet been fully verified. Tests are useful evidence but are not proof of compatibility across every device or protocol activation.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoinlib/blob/master/VALIDATION.md",
+        "https://github.com/sumcoinlabs/sumcoinlib/blob/master/README.md"
+      ]
+    },
+    {
+      "id": "video-sources",
+      "title": "Can Sumcoin Helper learn from YouTube video transcripts?",
+      "tags": [
+        "youtube",
+        "captions",
+        "transcript",
+        "subtitles",
+        "videos"
+      ],
+      "text": "Yes, if a trustworthy transcript is supplied. The transcript can be indexed with attribution and is marked unreviewed until an administrator verifies technical statements. The bot does not assume every video statement is a current network rule; older video claims must be checked against current software and official documentation.",
+      "sources": [
+        "https://github.com/sumcoinlabs/telegram-sum-helper"
+      ]
     }
   ]
 }

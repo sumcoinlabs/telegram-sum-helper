@@ -1,6 +1,6 @@
 {
   "name": "telegram-sum-helper",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "private": true,
   "description": "Grounded, multilingual, continuously improving Sumcoin Telegram support bot",
   "type": "module",
@@ -14,7 +14,8 @@
     "sync": "node scripts/sync-knowledge.mjs",
     "search": "node scripts/search-knowledge.mjs",
     "analyze": "node scripts/analyze-export.mjs",
-    "ingest": "node scripts/learn-export.mjs"
+    "ingest": "node scripts/learn-export.mjs",
+    "import:video": "node scripts/import-transcript.mjs"
   },
   "license": "MIT"
 }
