@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.3 — 2026-10-31
+
+- Retry Telegram sendMessage HTTP 429 failures using the official `retry_after` delay (plus one second), with bounded attempts.
+- Pace outbound messages to a group at approximately one every 3.1 seconds and serialize competing replies.
+- Do not retry uncertain network delivery outcomes or HTTP errors without a verified retry delay.
+- Regression tests for flood control, pacing, and non-retryable failures.
+
 ## 0.0.2 — 2026-10-31
 
 - Multilingual support questions: message-language detection, optional per-member language override, and localized core USD/cashout and scam-safety answers in 12 languages.

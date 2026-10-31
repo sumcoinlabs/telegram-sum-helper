@@ -47,3 +47,65 @@ test('Telegram network errors do not interpolate token-bearing URLs', async () =
     return true;
   });
 });
+
+test('Telegram retries a rejected sendMessage after retry_after without changing reply target', async () => {
+  let timestamp = 100000;
+  let requests = 0;
+  const waits = [];
+  const client = new TelegramClient('123:token', {
+    now: () => timestamp,
+    sleep: async (ms) => { waits.push(ms); timestamp += ms; },
+    fetchImpl: async (url, options) => {
+      assert.ok(url.endsWith('/sendMessage'));
+      assert.equal(JSON.parse(options.body).reply_parameters.message_id, 99);
+      requests++;
+      if (requests === 1) return {
+        ok: false, status: 429,
+        json: async () => ({ ok: false, description: 'Too Many Requests', parameters: { retry_after: 38 } })
+      };
+      return { ok: true, status: 200, json: async () => ({ ok: true, result: { message_id: 120 } }) };
+    }
+  });
+  const sent = await client.sendMessage({ chat: { id: -1001 }, message_id: 99 }, 'Value question');
+  assert.equal(sent.message_id, 120);
+  assert.equal(requests, 2);
+  assert.deepEqual(waits, [39000]);
+});
+
+test('Telegram paces consecutive sends in same chat', async () => {
+  let timestamp = 100000;
+  const waits = [];
+  const client = new TelegramClient('123:token', {
+    now: () => timestamp,
+    sleep: async (ms) => { waits.push(ms); timestamp += ms; },
+    fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ ok: true, result: {} }) })
+  });
+  await Promise.all([
+    client.sendMessage({ chat: { id: -1001 }, message_id: 1 }, 'A'),
+    client.sendMessage({ chat: { id: -1001 }, message_id: 2 }, 'B')
+  ]);
+  assert.deepEqual(waits, [3100]);
+});
+
+test('Telegram never auto-retries uncertain network errors or non-429 sends', async () => {
+  let attempts = 0;
+  const client = new TelegramClient('123:secret', {
+    sleep: async () => { throw new Error('Must not sleep'); },
+    fetchImpl: async () => { attempts++; throw new Error('network timeout'); }
+  });
+  await assert.rejects(() => client.sendMessage({ chat: { id: 1 }, message_id: 1 }, 'A'), /network error/);
+  assert.equal(attempts, 1);
+});
+
+test('Telegram does not retry floods with missing retry_after', async () => {
+  let attempts = 0;
+  const client = new TelegramClient('123:token', {
+    sleep: async () => { throw new Error('Must not sleep'); },
+    fetchImpl: async () => {
+      attempts++;
+      return { ok: false, status: 429, json: async () => ({ ok: false, description: 'Too Many Requests' }) };
+    }
+  });
+  await assert.rejects(() => client.sendMessage({ chat: { id: 1 }, message_id: 2 }, 'A'), /429/);
+  assert.equal(attempts, 1);
+});

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Publishes v0.0.2 over an existing sumcoinlabs/telegram-sum-helper main branch.
+# Publishes v0.0.3 over an existing sumcoinlabs/telegram-sum-helper main branch.
 # Uses a fresh staging clone; NEVER force-pushes or touches your production servers.
 set -Eeuo pipefail
 SOURCE="$(cd "$(dirname "$0")/.." && pwd)"
 for command in git gh node rsync mktemp; do
   command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
 done
-if [[ "$(node -p "require('$SOURCE/package.json').version")" != "0.0.2" ]]; then
-  echo 'Refusing: source is not version 0.0.2.' >&2;exit 1
+if [[ "$(node -p "require('$SOURCE/package.json').version")" != "0.0.3" ]]; then
+  echo 'Refusing: source is not version 0.0.3.' >&2;exit 1
 fi
 printf '========== VERIFY TESTS =========='; echo
 (cd "$SOURCE" && npm test)
@@ -21,7 +21,7 @@ STAGE="$(mktemp -d "$HOME/Documents/.telegram-sum-helper-publish.XXXXXX")"
 trap 'rm -rf "$STAGE"' EXIT
 printf '\n========== CLONE LATEST MAIN ==========\n'
 gh repo clone sumcoinlabs/telegram-sum-helper "$STAGE/repo" -- --branch main --single-branch
-printf '\n========== APPLY V0.0.2 SOURCE ==========\n'
+printf '\n========== APPLY V0.0.3 SOURCE ==========\n'
 rsync -a --delete --exclude='.git/' --exclude='.env' --exclude='data/' --exclude='node_modules/' \
   "$SOURCE/" "$STAGE/repo/"
 cd "$STAGE/repo"
@@ -30,15 +30,15 @@ if git ls-files | grep -Eq '(^|/)(\.env|result\.json|.*\.log)$'; then
   echo 'Aborted: a secret or chat export would be committed.' >&2;exit 1
 fi
 if git diff --cached --quiet; then
-  echo 'No changes detected. Repository already matches the local v0.0.2 release.'
+  echo 'No changes detected. Repository already matches the local v0.0.3 release.'
   exit 0
 fi
 printf '\n========== COMMIT AND PUSH ==========\n'
 git diff --cached --stat
-git commit -m 'Release telegram-sum-helper v0.0.2: multilingual support and safety improvements'
+git commit -m 'Release telegram-sum-helper v0.0.3: Telegram rate-limit retries and paced responses'
 git push origin HEAD:main
-if ! git ls-remote --tags origin 'refs/tags/v0.0.2' | grep -q .; then
-  git tag -a v0.0.2 -m 'telegram-sum-helper v0.0.2'
-  git push origin v0.0.2
+if ! git ls-remote --tags origin 'refs/tags/v0.0.3' | grep -q .; then
+  git tag -a v0.0.3 -m 'telegram-sum-helper v0.0.3'
+  git push origin v0.0.3
 fi
-printf '\nPublished version 0.0.2: https://github.com/sumcoinlabs/telegram-sum-helper\n'
+printf '\nPublished version 0.0.3: https://github.com/sumcoinlabs/telegram-sum-helper\n'

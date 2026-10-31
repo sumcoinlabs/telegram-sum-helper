@@ -1,6 +1,9 @@
 # Telegram Sum Helper
 
-**v0.0.2 — multilingual Sumcoin community support bot (Node.js 20+).**
+**v0.0.3 — multilingual Sumcoin community support bot (Node.js 20+).**
+
+**0.0.3 hotfix:** Telegram HTTP 429 flood-control responses now automatically retry the rejected send after Telegram's `retry_after` delay (up to two retries, 120 seconds each). Group replies are sent through a queue paced at 3.1 seconds, without charging Telegram Stars or changing the optional AI configuration. Unlike a rejected 429, network timeouts are never blindly retried because delivery may have succeeded. This is a local-test-verified change; the production service must be updated and restarted.
+
 
 `telegram-sum-helper` is a source-grounded first-line assistant for the Sumcoin Telegram community. It is **not a bank, exchange, wallet recovery service, blockchain node, or human administrator**. It cannot send or access coins. It never guarantees that Sumcoin's index-derived USD reference value can be converted into cash. Source code uses the official Telegram Bot API over native Node.js `fetch`, **no third-party runtime packages**, and optional OpenAI Responses API. This repository was **not forked from any Telegram bot GitHub repository**.
 
@@ -27,25 +30,25 @@ A message such as **“Como puedo retirar 100 dolares de mi wallet sumcoin?”**
 
 **Scope:** official curated support knowledge about SUM/index valuation versus liquidity, Proof-of-Stake, wallets/BIP39, Slice migration, staking, sending/receiving, Electrum sync, pending transfers, public explorer checks, fees, scam avoidance, and GitHub repositories. Synchronized public documents can contain obsolete facts; conflicting legacy PoW/PoS and migration terms must be escalated rather than guessed. The bot is not a general-purpose multilingual translation engine and cannot diagnose an individual user's wallet account.
 
-## Publish v0.0.2 after you publish v0.0.1
+## Publish v0.0.3 over the existing v0.0.2 repository
 
-Download **`telegram-sum-helper-v0.0.2.zip`** into your Mac's Downloads folder, then run **one block**:
+Download **`telegram-sum-helper-v0.0.3.zip`** into your Mac's Downloads folder, then run **one block**:
 
 ```bash
-mkdir -p ~/Documents/telegram-sum-helper-v0.0.2 && \
-unzip -oq ~/Downloads/telegram-sum-helper-v0.0.2.zip -d ~/Documents/telegram-sum-helper-v0.0.2 && \
-cd ~/Documents/telegram-sum-helper-v0.0.2/telegram-sum-helper && \
+mkdir -p ~/Documents/telegram-sum-helper-v0.0.3 && \
+unzip -oq ~/Downloads/telegram-sum-helper-v0.0.3.zip -d ~/Documents/telegram-sum-helper-v0.0.3 && \
+cd ~/Documents/telegram-sum-helper-v0.0.3/telegram-sum-helper && \
 bash scripts/push-update.sh
 ```
 
-This verifies local tests and `gh` login `sumcoinlabs`, clones the existing `main` branch into a temporary staging directory under `~/Documents`, applies the release files, creates a normal commit, pushes it to `main`, and tags `v0.0.2`. No force push, no backup archives, no production server modifications. **The repository must exist first.** If v0.0.1 is not yet published, either publish it first using its `scripts/publish-github.sh`, or run this release's `scripts/publish-github.sh` directly to create a repo with 0.0.2.
+This verifies local tests and `gh` login `sumcoinlabs`, clones the existing `main` branch into a temporary staging directory under `~/Documents`, applies the release files, creates a normal commit, pushes it to `main`, and tags `v0.0.3`. No force push, no backup archives, no production server modifications. **The repository must exist first.** Use this updater on the existing repository; it is not a first-time repository creation script.
 
 ## Install, run, and connect
 
 1. Create a new Telegram bot using `https://t.me/BotFather`, keep its API token private. Copy `.env.example` to `.env` and set `TELEGRAM_BOT_TOKEN`, `ALLOWED_CHAT_USERNAME=sumcoins` (ideally also exact `ALLOWED_CHAT_ID` after adding the bot). Keep `.env` mode 600. Do not publish tokens, seed words, or Telegram exports.
 2. Start with `INITIAL_MODE=observe`, which sends **no unsolicited answers**. Verified admin commands and explicit `/ask` still work. To read normal group messages, bot privacy mode must be disabled in BotFather, or the bot given the minimal administrator access needed; do **not** grant deletion/ban permissions.
 3. On Node.js 20+, run `npm test`, then optionally `npm run sync` (requires internet; fetches allowlisted official documentation), then `npm start`. Run `npm run sync` again and restart the bot when refreshing a cached index. A hardened systemd example is in `deploy/telegram-sum-helper.service`.
-4. Use admin `/stats` and `/learn` to inspect observed topics/languages; review the messages in Telegram for errors before `/mode reply`. **`state.json` persists old mode** if upgrading a running instance: explicitly run `/mode observe` before testing a v0.0.2 upgrade if v0.0.1 was previously in reply mode.
+4. Use admin `/stats` and `/learn` to inspect observed topics/languages; review the messages in Telegram for errors before `/mode reply`. **`state.json` persists old mode** if upgrading a running instance: explicitly run `/mode observe` before testing a v0.0.3 upgrade if v0.0.1 was previously in reply mode.
 5. For AI responses, add `OPENAI_API_KEY` and an available `OPENAI_MODEL` (example `gpt-4.1-mini`); verify model availability and pricing for your API account. Without a key, `/ask` performs local retrieval and replies with approved information. Personal message text sent through `/ask` is sent to the external AI provider **only when an API key is enabled**, with best-effort local secret detection and `store:false`. Do not post private recovery data to Telegram at all.
 
 ### Commands
