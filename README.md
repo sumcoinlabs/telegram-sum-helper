@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml/badge.svg"></a>
-  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.15"><img alt="Version 0.0.15" src="https://img.shields.io/badge/version-0.0.15-blue"></a>
+  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.16"><img alt="Version 0.0.15" src="https://img.shields.io/badge/version-0.0.16-blue"></a>
   <img alt="Node.js 20.11 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20.11-339933?logo=nodedotjs&logoColor=white">
   <img alt="14 supported locales" src="https://img.shields.io/badge/locales-14-0A73B7">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green"></a>
@@ -28,6 +28,8 @@
 - **Ongoing learning:** Privacy-filtered *new* group excerpts are stored on the VM; verified admin/developer answers become drafts until explicitly sourced and approved.
 - **Code-first, budget-safe answers:** Verified facts remain authoritative. Optional Groq (free-tier) or OpenAI API calls are **disabled by default** and capped hourly/daily/monthly; fallback is free.
 - **Reviewed corrections and reporting:** Admin `/correct` (reply to bot), `/approve`, `/revoke`, and `/weekly` provide an auditable learning cycle.
+
+**Groq setup:** After deploying, run `python3 scripts/setup-groq.py` from the VM application directory. The installer privately prompts for your key, reports safe account/model-permission errors and tries 120B then 20B before changing `.env`. If access is denied, existing offline answers remain active.
 
 ## Install or update
 

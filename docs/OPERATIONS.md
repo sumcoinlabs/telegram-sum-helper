@@ -99,3 +99,14 @@ The historical import still requires the **local authorized Telegram export**. `
 `AI_PROVIDER=groq`, `AI_MODEL=openai/gpt-oss-120b`, `AI_ENABLED=true`, and a private `GROQ_API_KEY` in VM `.env` activate Groq for `/ask`, direct mentions and replies to the bot. No provider key belongs in GitHub, chat, or documentation. Ordinary group replies and live price calculations stay code-driven. The free-tier is subject to provider request and token limits; HTTP 429/other errors fall back to offline reviewed answers. The local 4/hour, 12/day, and 60/month caps are deliberately more conservative than Groq's published free-tier caps. `/privacy` discloses the chosen provider. The integration does not send `store` to Groq, which presently rejects that option. When using direct OpenAI, set `AI_PROVIDER=openai`, `AI_MODEL=gpt-6-luna`, and `OPENAI_API_KEY`. Set `AI_ENABLED=false` to disable paid/hosted AI instantly after restarting.
 
 For a live check, use `/ask Why is Sumcoin proof-of-stake today?` as an administrator. Never test by posting your API key into Telegram.
+
+## Groq account diagnostics (v0.0.16)
+
+Run on the bot VM after pulling v0.0.16:
+
+```bash
+cd /home/electrumbtc1/telegram-sum-helper
+python3 scripts/setup-groq.py
+```
+
+The script prompts privately for the Groq key. First it checks the permitted-model list; then it tries `openai/gpt-oss-120b` and, if blocked, `openai/gpt-oss-20b`. A 403 may indicate model permission restrictions at the Groq organization or project level; use the printed safe provider error code and the Groq Limits settings. The private `.env` is replaced only after successful inference. Never paste the API key into Telegram, GitHub or a support conversation. Restart `telegram-sum-helper.service` after success.

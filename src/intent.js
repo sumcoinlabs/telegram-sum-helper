@@ -63,7 +63,7 @@ export function requestedCurrency(text){
   return null;
 }
 const coin=/(?:\bsumcoin\b|\bsum\b|#sumcoin|\$sum|サムコイン|섬코인|苏姆币)/iu;
-const pricing=/(?:\bprice\b|\brate\b|\bworth\b|\bvalue\b|\bquote\b|\bvalued\b|how much|how many (?:yen|euros?|dollars?|pounds?|rupees?|reais)|\bprecio\b|\bvalor\b|\bcotizaci|\bpreco\b|\bquanto vale\b|\bprix\b|\bpreis\b|\bprezzo\b|\bkurs\b|\bprecio\b|\bfiyat\b|\bharga\b|цена|стоимость|السعر|कीमत|价格|价值|価格|いくら|시세|가격)/iu;
+const pricing=/(?:\bprice\b|\brate\b|\bworth\b|\bvalue\b|\bquote\b|\bvalued\b|how much|how many (?:yen|euros?|dollars?|pounds?|rupees?|reais)|\bprecio\b|\bvalor\b|\bcotizaci|\bpreco\b|\bquanto vale\b|\bprix\b|\bvaleur\b|\bvaut\b|\bvalent\b|\bpreis\b|\bprezzo\b|\bkurs\b|\bprecio\b|\bfiyat\b|\bharga\b|цена|стоимость|السعر|कीमत|价格|价值|価格|いくら|시세|가격)/iu;
 const formula=/(?:\bcalculat|\bformula\b|methodolog|\bindex.*(?:work|derive)|\bhow.*(?:track|weigh)|\bcomo.*calcul|\bcómo.*calcul|计算方法|計算方法)/iu;
 const transaction=/(?:\bmigrat|\bmigration\b|\bwithdraw|\bcash.out|\bstaking rewards?\b|\btransfer fee\b|\btransaction fee\b|\bbuy\b|\bsell\b|\bpay\b|\btax\b)/iu;
 

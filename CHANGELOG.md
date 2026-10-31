@@ -1,3 +1,10 @@
+## 0.0.16 — 2026-10-31
+
+- Correct French natural-language live-price routing: “Combien vaut un SUM en Euro ?”, “Combien valent 5 SUM en euros ?” and “Quelle est la valeur de 1 SUM en EUR ?” now fetch an EUR rate from the read-only, approved rates API, with French interface copy. English prices and nonquestions retain their behavior.
+- Add a private, repeatable `scripts/setup-groq.py` installer that differentiates HTTP 401/403/429 and prints only safe error codes/messages, not keys; model-permission failures do not change `.env`.
+- On account-permission denial for GPT-OSS 120B, test GPT-OSS 20B as a free-tier fallback; only enable AI after a real model response. Existing secrets, learning and moderator data remain on the VM.
+- Keep the 201 established regression tests plus French price intent and Groq setup security checks. No historical transcript, runtime data, credentials or server backups packaged.
+
 ## 0.0.15 — 2026-10-31
 
 - Add optional Groq-hosted OpenAI GPT-OSS 120B Responses API, with fixed endpoint, separate API key and existing quota-protected offline fallback. Direct OpenAI remains supported; neither provider is enabled by default.
