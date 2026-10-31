@@ -92,7 +92,7 @@ export class State {
   }
 
   noteOutcome(kind){
-    if(!['answered','ai','offline','escalated','correction','feedback'].includes(kind))return;
+    if(!['answered','ai','offline','escalated','correction','feedback','live','local','ai-fallback'].includes(kind))return;
     const day=new Date(this.now()).toISOString().slice(0,10);
     const row=this.data.outcomes[day]||={};row[kind]=(row[kind]||0)+1;
     this.data.outcomes[day]=row;
@@ -106,7 +106,7 @@ export class State {
     const totals={};for(const [,row] of records)for(const [kind,n] of Object.entries(row))totals[kind]=(totals[kind]||0)+n;
     const topics=Object.create(null);for(const [day,bucket] of Object.entries(this.data.days))if(day>=weekAgo)for(const [topic,n] of Object.entries(bucket.detected||{}))topics[topic]=(topics[topic]||0)+n;
     const top=Object.entries(topics).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,n])=>`${k} ${n}`).join(', ');
-    return `Sumcoin Helper weekly quality report (last 7 days, UTC)\nAnswers delivered: ${totals.answered||0}\nAI-assisted: ${totals.ai||0}\nOffline / reviewed answers: ${totals.offline||0}\nEscalated: ${totals.escalated||0}\nCorrections approved: ${totals.correction||0}\nFeedback received: ${totals.feedback||0}\nCommon recognized subjects: ${top||'none'}\nNo personal messages or identities included.`;
+    return `Sumcoin Helper weekly quality report (last 7 days, UTC)\nAnswers delivered: ${totals.answered||0}\nAI-assisted: ${totals.ai||0}\nOffline / reviewed answers: ${totals.offline||0}\nLive deterministic results: ${totals.live||0}\nLocal automatic FAQ answers: ${totals.local||0}\nAI fallbacks: ${totals['ai-fallback']||0}\nEscalated: ${totals.escalated||0}\nCorrections approved: ${totals.correction||0}\nFeedback received: ${totals.feedback||0}\nCommon recognized subjects: ${top||'none'}\nNo personal messages or identities included.`;
   }
 
   summary() {

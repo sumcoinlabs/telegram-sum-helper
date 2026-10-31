@@ -10,11 +10,11 @@ const WORDS = {
   en:'how what why where when can could should please help withdraw dollars money my wallet is are from the this that send receive missing balance with do does did',
   es:'quiero necesito retirar dólares dolares dinero billetera saldo cómo como puedo sacar cambiar vender dónde donde qué que ayuda tengo mis enviar recibir estafa gracias calcula calculado índice indice cotización cotizacion precio precios por qué porque del el la los las hoy cuánto cuanto vale',
   pt:'quero preciso retirar dinheiro carteira saldo como posso sacar vender onde quanto minha minhas enviar receber obrigado saque pix reais pelo pela calculado calculada criptomoedas cotação cotacao valor preço preco índice indice funciona funcionamento mercado brasileiro do da dos das o os um uma meu meus você voces',
-  fr:'comment puis peux retirer argent portefeuille solde pourquoi avec vous mon mes envoyer recevoir vendre achat combien vaut valent valeur prix quel quelle aider bonjour',
-  de:'wie kann ich meine mein geld abheben brieftasche guthaben warum senden empfangen verkaufen hallo bitte hilfe auszahlen',
-  it:'come posso prelevare soldi portafoglio saldo perché perche mio mia inviare ricevere vendere ciao aiuto quanto',
-  tr:'nasıl nasil para çekebilirim cekebilirim cüzdan cuzdan bakiyem nerede göndermek gondermek satmak yardım yardim',
-  id:'bagaimana bisa menarik uang dompet saldo saya mengirim menerima jual tolong berapa kenapa'
+  fr:'comment puis peux retirer argent portefeuille solde pourquoi avec vous mon mes envoyer recevoir vendre achat combien vaut valent valeur prix quel quelle aider bonjour explique expliquer explication simplement fonctionne fonctionnement comment est un une du de des les pour indice cours euro euros différence differente different garantie garanti garantir taux change peut peux signifie cest estce que voudrais savoir pourrais combien',
+  de:'wie kann ich meine mein geld abheben brieftasche guthaben warum senden empfangen verkaufen hallo bitte hilfe auszahlen erklären erklaren einfach funktioniert preis unterschied garantie bedeutet erklärung erklarung',
+  it:'come posso prelevare soldi portafoglio saldo perché perche mio mia inviare ricevere vendere ciao aiuto quanto spiega spiegami semplicemente funziona funzionamento prezzo euro indice differenza garanzia',
+  tr:'nasıl nasil para çekebilirim cekebilirim cüzdan cuzdan bakiyem nerede göndermek gondermek satmak yardım yardim açıkla acikla açıklama aciklama çalışır calisir fiyat fark garanti',
+  id:'bagaimana bisa menarik uang dompet saldo saya mengirim menerima jual tolong berapa kenapa jelaskan sederhana bekerja harga perbedaan jaminan indeks'
 };
 const WORDSETS=Object.fromEntries(Object.entries(WORDS).map(([k,v])=>[k,new Set(v.split(' '))]));
 const fold=s=>String(s||'').toLocaleLowerCase('und').normalize('NFD').replace(/[\u0300-\u036f]/g,'');

@@ -11,6 +11,7 @@ import {needsHumanReview,isDismissal,REVIEW_USERNAME} from './escalations.js';
 import {supportUI} from './support-ui.js';
 import {priceIntent,ambiguousPesoPrice,pesoClarificationCurrency,consensusIntent,consensusReply,isPoSConfirmation,consensusAnswerKind} from './intent.js';
 import {VERSION} from './version.js';
+import {needsConversationalAnswer} from './auto-ai.js';
 import fs from 'node:fs';
 
 
@@ -39,7 +40,7 @@ export function isCurrentPriceQuestion(q){
 }
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
 const HELP=`Sumcoin Helper v${VERSION} — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
-/currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n/stop — pause automatic help for 24 hours; /resume — turn it on again\n\nGroup admins: /mode observe|reply, /stats, /weekly, /feedbacks, /learn, /correct (reply), /revoke ID, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid, /queue\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
+/currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/engine (admin, reply to bot answer) — show which engine answered\n/feedback — report an inaccurate answer (aggregated)\n/stop — pause automatic help for 24 hours; /resume — turn it on again\n\nGroup admins: /mode observe|reply, /stats, /weekly, /feedbacks, /learn, /correct (reply), /revoke ID, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid, /queue\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
 export function commandFrom(text,botUsername=''){
   const m=/^\/([a-z_]+)(?:@([a-z0-9_]+))?(?:\s+([\s\S]*))?$/i.exec(String(text||'').trim());
   if(!m||(m[2]&&m[2].toLowerCase()!==botUsername.toLowerCase()))return null;
@@ -63,7 +64,7 @@ export function isDirectedMention(text,botUsername){
   return start.test(text)||/[?¿؟？]/u.test(text);
 }
 export function createHandler({client,state,config,botUsername,knowledge,learning,ai,escalations=null,groupIndex=null,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress}}){
-  const preferences=new Map(),currencyPreferences=new Map(),pendingPesos=new Map(),seenReplies=new Map(),topicHistory=new Map(),answeredMessages=new Map(),mutedMembers=new Map(),adminCache=new Map();
+  const preferences=new Map(),currencyPreferences=new Map(),pendingPesos=new Map(),seenReplies=new Map(),answerOrigins=new Map(),topicHistory=new Map(),answeredMessages=new Map(),mutedMembers=new Map(),adminCache=new Map();
   const now=()=>Date.now();
   let lastWeeklyAttempt=0;
   async function send(m,text){return client.sendMessage(m,String(text).slice(0,3500));}
@@ -176,9 +177,15 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
   // Track topics only after Telegram confirms delivery. Public bot replies are
   // scoped by chat+message ID, so someone replying to a different bot answer
   // gets the correct context without sharing anyone's private conversation.
-  async function sendTopic(m,text,id,lang){
+  async function sendTopic(m,text,id,lang,origin='local'){
     const result=await send(m,text);
     state.noteOutcome('answered');
+    if(origin==='live')state.noteOutcome('live');
+    else if(origin==='local')state.noteOutcome('local');
+    if(Number.isSafeInteger(result?.message_id)){
+      answerOrigins.set(`${m.chat.id}:${result.message_id}`,{origin,until:now()+24*3600000});
+      if(answerOrigins.size>1000){for(const [key,v] of answerOrigins)if(v.until<=now())answerOrigins.delete(key);while(answerOrigins.size>1000)answerOrigins.delete(answerOrigins.keys().next().value);}
+    }
     if(id&&knowledge.find(id)){
       rememberTopic(m,id,lang);
       if(Number.isSafeInteger(result?.message_id)){
@@ -225,7 +232,7 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
       return false;
     }
     pendingPesos.delete(key);
-    await sendTopic(m,await liveOps.price({...priceOptions(m,pending.lang,currency),amount:1}),'index-live',pending.lang);
+    await sendTopic(m,await liveOps.price({...priceOptions(m,pending.lang,currency),amount:1}),'index-live',pending.lang,'live');
     return true;
   }
   async function ask(m,q,{automatic=false,expanded=false,contextTopic=null,contextLanguage=null}={}){
@@ -242,12 +249,12 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     const contextId=!detected&&chosenPrior&&isContextualFollowup(q)?chosenPrior.id:null;
     const pref=preferences.get(String(m.from?.id||''));
     if((contextId||expanded)&&chosenPrior?.lang&&!(pref?.until>now()))lang=chosenPrior.lang;
-    if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?config.userCooldownHours:0,automatic?config.topicCooldownSeconds:0))return;
+    if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?0.0015:0,automatic?0:0))return;
     if(await finishPesos(m,q))return;
     if(await askPesos(m,q,lang))return;
     const pricing=priceIntent(q);
-    if(pricing)return sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang);
-    if(consensusIntent(q))return sendTopic(m,consensusReply(lang,q),'chain',lang);
+    if(pricing)return sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang,'live');
+    if(consensusIntent(q))return sendTopic(m,consensusReply(lang,q),'chain',lang,'local');
     const retrievalQuery=ai.apiKey?ai.retrievalQuestion(key,q):q;
     const docs=knowledge.search(contextId?knowledge.find(contextId)?.title||q:retrievalQuery,{limit:12});
     if(escalations&&!automatic&&inAllowedGroup(m.chat,config)&&!await admin(m)&&
@@ -280,9 +287,9 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
       const reviewedContext=docs.filter(d=>d.kind==='curated'||d.kind==='admin-approved');
       if(!reviewedContext.length){state.noteOutcome('offline');return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang);}
       const answer=await ai.answer({question:q,context:reviewedContext,historyKey:key,language:lang});
-      await sendTopic(m,answer.text,contextId||primary?.id,lang);state.record('answered-ai',true);state.noteOutcome('ai');
+      await sendTopic(m,answer.text,contextId||primary?.id,lang,'groq');state.record('answered-ai',true);state.noteOutcome('ai');
     }catch(err){console.error('AI unavailable:',err.message);
-      state.noteOutcome('offline');return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang);}
+      state.noteOutcome('offline');state.noteOutcome('ai-fallback');return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang,'fallback');}
   }
   const handle=async function handle(m){
     if(!m?.chat||!m.text||m.from?.is_bot)return;
@@ -438,6 +445,12 @@ ${ui(lang,'safety')}`);
         seenReplies.set(key,now()+86400000);if(seenReplies.size>1500)for(const [k,v] of seenReplies)if(v<now())seenReplies.delete(k);
         state.addFeedback(Number(m.reply_to_message.message_id));return send(m,'Feedback saved for administrator review. Only the bot reply ID was recorded; no member text.');
       }
+      if(name==='engine'){
+        if(!group||!await admin(m,true,false))return send(m,'Only group administrators can inspect answer provenance.');
+        const id=m.reply_to_message?.message_id;
+        const entry=Number.isSafeInteger(id)?answerOrigins.get(`${m.chat.id}:${id}`):null;
+        return send(m,entry&&entry.until>now()?`Answer engine: ${entry.origin==='groq'?'Groq AI':entry.origin==='live'?'live verified Sumcoin API':entry.origin==='fallback'?'verified local fallback':'verified local knowledge'}.`:'Reply to a recent bot answer with /engine. Only answers since the last restart can be inspected.');
+      }
       if(['mode','stats','feedbacks','learn','review','drafts','history','status','source','approve','reject','revoke','correct','weekly','teach','chatid'].includes(name)){
         if(!group||!await admin(m,true,false))return send(m,'This command is restricted to authorized Sumcoin group administrators.');
         if(name==='stats')return send(m,state.summary());
@@ -540,7 +553,7 @@ Private runtime data is not published to GitHub.`);
     }
 
     const standaloneConsensus=/^(?:is|does|did|was|can|will|what|how)\b/i.test(m.text.trim())&&consensusIntent(m.text);
-    if(!isSupportMessage(m.text)&&!priceIntent(m.text)&&!ambiguousPesoPrice(m.text)&&!standaloneConsensus)return;
+    if(!isSupportMessage(m.text)&&!priceIntent(m.text)&&!ambiguousPesoPrice(m.text)&&!standaloneConsensus&&!(needsConversationalAnswer(m.text)&&/(?:\bsumcoin\b|\bsum\b|\bslice\b)/i.test(m.text)))return;
     // Do not interrupt rhetorical, promotional, or off-topic Sumcoin chat.
     if(/^(?:do you (?:like|love)|who else (?:likes|loves)|isn't it (?:great|awesome)|sumcoin (?:to the moon|is awesome)|hey guys|good morning)\b/i.test(m.text.trim()))return;
     // No automatic messages to admins, anonymous admins, channel posts or opted-out members.
@@ -553,11 +566,11 @@ Private runtime data is not published to GitHub.`);
     if(await askPesos(m,m.text,language))return;
     const pricing=priceIntent(m.text);
     if(pricing){
-      if(state.shouldReply(m,`auto:live-price:${pricing.currency||'auto'}:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang);}
+      if(state.shouldReply(m,`auto:live-price:${pricing.currency||'auto'}:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang,'live');}
       return;
     }
     if(consensusIntent(m.text)){
-      if(state.shouldReply(m,`auto:consensus:${consensusAnswerKind(m.text)}:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,consensusReply(lang,m.text),'chain',lang);}
+      if(state.shouldReply(m,`auto:consensus:${consensusAnswerKind(m.text)}:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,consensusReply(lang,m.text),'chain',lang,'local');}
       return;
     }
     const detected=topic||learning.learnedTopic(m.text);
@@ -565,6 +578,18 @@ Private runtime data is not published to GitHub.`);
     const topReviewed=docs.find(x=>x.kind==='curated'||x.kind==='admin-approved');
     const narrower=specificFAQTopic(m.text);
     const recognized=narrower&&knowledge.find(narrower)?narrower:detected&&knowledge.find(detected)?detected:topReviewed?.score>=18&&topReviewed?.coverage>=0.48?topReviewed.id:null;
+    // Optional natural-language AI without /ask. Use only when it genuinely
+    // improves a substantial explanation, and ONLY with vetted context.
+    // Current price, PoS and short FAQs have already taken deterministic paths.
+    if(config.autoAI&&ai.apiKey&&needsConversationalAnswer(m.text)&&!needsHumanReview(m.text)){
+      const reviewed=docs.filter(d=>(d.kind==='curated'||d.kind==='admin-approved')&&d.reviewed!==false);
+      const reliable=reviewed.some(d=>d.score>=12&&d.coverage>=0.25);
+      if(reliable){
+        if(!state.shouldReply(m,`auto:reasoning:${m.from?.id||'unknown'}`,0.0015,0))return;
+        // ask() enforces quota, redaction, reviewed-only context and fallback.
+        return ask(m,m.text,{automatic:true});
+      }
+    }
     if(recognized&&!needsHumanReview(m.text)){
       // Short per-user / per-group cooldown rather than blocking support for six hours.
       if(!state.shouldReply(m,`auto:${recognized}:${m.from?.id}`,0.0015,0))return;

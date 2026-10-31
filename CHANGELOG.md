@@ -1,3 +1,11 @@
+## v0.0.17 — Hybrid automatic AI and language quality (2026-10-31)
+
+- Opt-in `AUTO_AI=true` lets naturally worded, explanation-heavy group support questions invoke Groq automatically when reviewed sources match. Ordinary rate quotes, consensus and simple FAQs still use deterministic local paths. No AI call for unrelated chatter, unsupported claims or sensitive input.
+- Expanded language-detection cues for short French explanations and common German, Italian, Turkish and Indonesian requests; preserves all 14 localized reviewed FAQ and price templates.
+- Add `/engine` for group admins replying to a recent bot answer: identifies Groq, verified local, or live rate source without exposing a key or user data. In-memory answer provenance resets on restart.
+- Weekly reports count live deterministic answers and local FAQ answers. Existing monthly/daily/hourly model caps, admin review, optional Groq and offline fallback remain.
+- Reinstalls preserve `.env`, private group-index, historic fingerprints, pending moderation and all other runtime data.
+
 ## 0.0.16 — 2026-10-31
 
 - Correct French natural-language live-price routing: “Combien vaut un SUM en Euro ?”, “Combien valent 5 SUM en euros ?” and “Quelle est la valeur de 1 SUM en EUR ?” now fetch an EUR rate from the read-only, approved rates API, with French interface copy. English prices and nonquestions retain their behavior.
