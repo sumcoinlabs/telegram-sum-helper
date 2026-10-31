@@ -13,7 +13,7 @@ import {createHandler} from '../src/bot.js';
 import {VERSION} from '../src/version.js';
 
 test('v017 version and French plain-text detection independent of Telegram language',()=>{
- assert.equal(VERSION,'0.0.17');
+ assert.equal(VERSION,'0.0.18');
  assert.equal(detectLanguage("Explique-moi simplement comment fonctionne l'indice Sumcoin.",'en'),'fr');
  assert.equal(detectLanguage('Quelle est le prix d’un SUM en Euro ?','pt'),'fr');
  assert.equal(needsConversationalAnswer("Explique-moi simplement comment fonctionne l'indice Sumcoin."),true);

@@ -20,7 +20,7 @@ import fs from 'node:fs';
 // It does not create knowledge from a group message or override live price/PoS.
 export function specificFAQTopic(question){
   const q=String(question||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const subject=/(?:\bsumcoin\b|\bsum\b|\bslice\b)/i.test(q);
+  const subject=/(?:\bsumcoins?\b|\bsum\b|\bslice\b)/i.test(q);
   if(!subject)return null;
   if(/(?:\bstak(?:e|ing)\b|\bmint(?:ing)?\b)/i.test(q)&&/(?:\bmobile\b|\bphone\b|\bandroid\b|\bios\b|\biphone\b|\bapp\b)/i.test(q))return 'staking-mobile';
   if(/(?:\bcore\b|\bstaking\b)/i.test(q)&&/(?:not staking|staking not working|won.t stake|can.t stake|not minting|no rewards)/i.test(q))return 'staking-check';
@@ -553,11 +553,15 @@ Private runtime data is not published to GitHub.`);
     }
 
     const standaloneConsensus=/^(?:is|does|did|was|can|will|what|how)\b/i.test(m.text.trim())&&consensusIntent(m.text);
-    if(!isSupportMessage(m.text)&&!priceIntent(m.text)&&!ambiguousPesoPrice(m.text)&&!standaloneConsensus&&!(needsConversationalAnswer(m.text)&&/(?:\bsumcoin\b|\bsum\b|\bslice\b)/i.test(m.text)))return;
+    if(!isSupportMessage(m.text)&&!priceIntent(m.text)&&!ambiguousPesoPrice(m.text)&&!standaloneConsensus&&!(needsConversationalAnswer(m.text)&&/(?:\bsumcoins?\b|\bsum\b|\bslice\b)/i.test(m.text)))return;
     // Do not interrupt rhetorical, promotional, or off-topic Sumcoin chat.
     if(/^(?:do you (?:like|love)|who else (?:likes|loves)|isn't it (?:great|awesome)|sumcoin (?:to the moon|is awesome)|hey guys|good morning)\b/i.test(m.text.trim()))return;
-    // No automatic messages to admins, anonymous admins, channel posts or opted-out members.
-    if(m.sender_chat||await admin(m)||isMuted(m))return;
+    // Group announcements by admins stay quiet. A clearly phrased live-price
+    // QUESTION is an explicit request, even if it comes from an admin. Never
+    // automatically respond to admin statements, routine posts or anonymous admins.
+    const adminPriceQuestion=Boolean((priceIntent(m.text)||ambiguousPesoPrice(m.text)) &&
+      (/[?¿？]/u.test(m.text)||/^(?:what(?:['’]?s| is)|whats|how much|show(?: me)?|tell me|give me|could you|can you)\b/iu.test(m.text.trim())));
+    if(m.sender_chat||isMuted(m)||(await admin(m)&&!adminPriceQuestion))return;
     const {topic,language}=classify(m.text,m.from?.language_code);
     if(config.learningEnabled!==false)learning.observe(m.text,topic,language);
     if(topic)state.record(topic,false);

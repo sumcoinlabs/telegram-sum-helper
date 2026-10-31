@@ -62,7 +62,7 @@ export function requestedCurrency(text){
   }
   return null;
 }
-const coin=/(?:\bsumcoin\b|\bsum\b|#sumcoin|\$sum|サムコイン|섬코인|苏姆币)/iu;
+const coin=/(?:\bsumcoins?\b|\bsum\b|#sumcoins?|\$sum|サムコイン|섬코인|苏姆币)/iu;
 const pricing=/(?:\bprice\b|\brate\b|\bworth\b|\bvalue\b|\bquote\b|\bvalued\b|how much|how many (?:yen|euros?|dollars?|pounds?|rupees?|reais)|\bprecio\b|\bvalor\b|\bcotizaci|\bpreco\b|\bquanto vale\b|\bprix\b|\bvaleur\b|\bvaut\b|\bvalent\b|\bpreis\b|\bprezzo\b|\bkurs\b|\bprecio\b|\bfiyat\b|\bharga\b|цена|стоимость|السعر|कीमत|价格|价值|価格|いくら|시세|가격)/iu;
 const formula=/(?:\bcalculat|\bformula\b|methodolog|\bindex.*(?:work|derive)|\bhow.*(?:track|weigh)|\bcomo.*calcul|\bcómo.*calcul|计算方法|計算方法)/iu;
 const transaction=/(?:\bmigrat|\bmigration\b|\bwithdraw|\bcash.out|\bstaking rewards?\b|\btransfer fee\b|\btransaction fee\b|\bbuy\b|\bsell\b|\bpay\b|\btax\b)/iu;
@@ -97,9 +97,10 @@ export function priceIntent(q){
   // Don't treat a casual mention of 'Sumcoin' + 'dollars' as a price request.
   const quantityConversion=/(?:\b(?:how many|convert|what is|what's|whats)\b.*\b(?:sumcoin|sum)\b.*\b(?:in|to)\b|\b(?:[\d,.]+)\s*(?:sumcoin|sum)\s+(?:in|to)\s+)/iu.test(s) && explicit;
   if(!pricing.test(s)&&!quantityConversion)return null;
-  if(!/[?¿？]/u.test(q) && !(explicit&&/^(?:what|how|show|tell|please|convert|price|rate|sumcoin|sum|\$sum|[0-9])/iu.test(s)) && !/(?:^(?:sumcoin|sum|\$sum)\s+(?:price|rate|value|worth)(?:\s+(?:today|now|current|live))?$|^(?:current|live)\s+sumcoin\s+(?:price|rate)|^(?:price|rate)\s+(?:of|for)\s+sumcoin$|how much|quanto|cuanto)/iu.test(s))return null;
+  const conversationalPrice=/^(?:what(?:['’]?s| is)|whats|how much|show(?: me)?|tell me|give me)\b/iu.test(s) && pricing.test(s);
+  if(!/[?¿？]/u.test(q) && !conversationalPrice && !(explicit&&/^(?:what|how|show|tell|please|convert|price|rate|sumcoin|sum|\$sum|[0-9])/iu.test(s)) && !/(?:^(?:sumcoin|sum|\$sum)\s+(?:price|rate|value|worth)(?:\s+(?:today|now|current|live))?$|^(?:current|live)\s+sumcoin\s+(?:price|rate)|^(?:price|rate)\s+(?:of|for)\s+sumcoin$|how much|quanto|cuanto)/iu.test(s))return null;
   // A user can ask the rate without 'current': 'Sumcoin price in yen?'
-  const matches=[...s.matchAll(/(?:\b([\d,]+(?:\.\d+)?)\s*(?:sumcoin|sum\b)|\b(?:sumcoin|sum)\s*([\d,]+(?:\.\d+)?))/giu)];
+  const matches=[...s.matchAll(/(?:\b([\d,]+(?:\.\d+)?)\s*(?:sumcoins?|sum\b)|\b(?:sumcoins?|sum)\s*([\d,]+(?:\.\d+)?))/giu)];
   let amount=1;
   if(matches.length){const parsed=Number((matches[0][1]||matches[0][2]).replace(/,/g,''));if(Number.isFinite(parsed)&&parsed>0&&parsed<=1_000_000)amount=parsed;}
   return {currency:explicit,amount};

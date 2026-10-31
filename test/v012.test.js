@@ -107,7 +107,7 @@ test('v012 historical examples are searchable without ingesting member transcrip
 });
 test('v012 branded README is still concise and announces current release',()=>{
  const readme=fs.readFileSync(new URL('../README.md',import.meta.url),'utf8');
- assert.match(readme,/version-0\.0\.17/);
+ assert.match(readme,/version-0\.0\.18/);
  assert.match(readme,/sumcoin_400x400\.png/);
  assert.ok(readme.split('\n').length<100);
 });

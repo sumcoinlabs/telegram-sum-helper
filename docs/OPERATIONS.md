@@ -110,3 +110,12 @@ python3 scripts/setup-groq.py
 ```
 
 The script prompts privately for the Groq key. First it checks the permitted-model list; then it tries `openai/gpt-oss-120b` and, if blocked, `openai/gpt-oss-20b`. A 403 may indicate model permission restrictions at the Groq organization or project level; use the printed safe provider error code and the Groq Limits settings. The private `.env` is replaced only after successful inference. Never paste the API key into Telegram, GitHub or a support conversation. Restart `telegram-sum-helper.service` after success.
+
+## v0.0.18 live-price and admin tests
+
+Natural questions like “What’s Sumcoins price right now” need no question mark or currency code.
+The strict live-rate path selects the approved currency feed, never a generated AI amount.
+Group admins may ask clear natural price questions; other admin posts and anonymous admin messages stay quiet.
+`/engine`, when used by a group admin as a reply to a bot message, identifies live, local, or Groq origin while the in-memory provenance is available.
+`AUTO_AI=true` is required for automatic *explanatory* Groq answers; no key changes needed when upgrading from v0.0.17.
+The private Groq installer specifies `User-Agent: SumcoinHelper/0.0.18` to avoid Python-urllib Cloudflare 403 responses.

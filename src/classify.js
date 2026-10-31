@@ -17,7 +17,7 @@ const PATTERNS={
  wallet:['wallet','billetera','monedero','cartera','carteira','portefeuille','geldbörse','brieftasche','portafoglio','кошелек','кошелёк','محفظة','वॉलेट','钱包','ウォレット','지갑','cüzdan','dompet'],
  buy:['buy','where to buy','exchange listing','comprar','acheter','kaufen','acquistare','купить','شراء','खरीद','购买','買う','구매']
 };
-const context=/(?:\bsumcoin\b|\bsum\b|\bslice\b|\belectrum\b|\bwallet\b|\bbilletera\b|\bcarteira\b|\bportefeuille\b|\bbrieftasche\b|\bportafoglio\b|кошел|محفظ|वॉलेट|钱包|ウォレット|지갑)/iu;
+const context=/(?:\bsumcoins?\b|\bsum\b|\bslice\b|\belectrum\b|\bwallet\b|\bbilletera\b|\bcarteira\b|\bportefeuille\b|\bbrieftasche\b|\bportafoglio\b|кошел|محفظ|वॉलेट|钱包|ウォレット|지갑)/iu;
 const helper=/\b(?:how|what|why|where|when|can i|could i|please|help|anyone|need help|i cannot|i can't|i have a problem|not working|missing|lost|stuck|error|failed|como|puedo|necesito|ayuda|quiero|quanto|posso|preciso|ajuda|comment|pourquoi|besoin|aide|wie|kann|hilfe|come|posso|aiuto|nasıl|bisa|bagaimana)\b|как|почему|помог|можно|كيف|لماذا|مساعدة|कैसे|क्यों|मदद|怎么|如何|为什么|请问|できますか|どうして|教えて|어떻게|왜|도움/iu;
 const explicitReport=/(?:not arrived|never arrived|wallet is empty|balance missing|my (?:wallet|coins?) (?:is|are) (?:gone|missing)|no ha llegado|não chegou|钱包.*不见|余额.*零|残高.*ゼロ|잔액.*없어)/iu;
 function has(s,patterns){return patterns.some(p=>{const n=normalize(p);const i=s.indexOf(n);if(i<0)return false;

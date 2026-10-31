@@ -1,3 +1,12 @@
+## v0.0.18 — Natural price questions and admin-safe live quotes (2026-10-31)
+
+- Recognizes “What’s Sumcoins price right now”, “What's Sumcoin price right now”, “Whats SUM price right now” and similar natural questions without a trailing question mark or an explicit currency. Uses the existing preferred-currency selection, not AI-generated amounts.
+- Accepts plural “Sumcoins” for both live-price intent and general group-support context. Does not misinterpret an ordinary statement like “The Sumcoin price is high today” as a price request.
+- Allows administrators to get automatic live quotes **only for clear price questions**. Keeps all unrelated admin announcements, anonymous admin posts and general auto-AI questions suppressed unless explicitly directed to the bot.
+- Preserves optional Groq, 14-language answers, 4/hour/12/day/60/month quotas, `/engine` provenance and offline fallback from v0.0.17. No production credentials or private group data are included.
+- The private Groq setup tool now sets a named User-Agent so Cloudflare does not reject Python urllib requests by default.
+- Publisher accepts an exact verified v0.0.16 base or the tagged v0.0.17 fast-forward release, so the owner may skip v0.0.17 without rewriting history.
+
 ## v0.0.17 — Hybrid automatic AI and language quality (2026-10-31)
 
 - Opt-in `AUTO_AI=true` lets naturally worded, explanation-heavy group support questions invoke Groq automatically when reviewed sources match. Ordinary rate quotes, consensus and simple FAQs still use deterministic local paths. No AI call for unrelated chatter, unsupported claims or sensitive input.
