@@ -1,44 +1,57 @@
 #!/usr/bin/env bash
-# Publishes v0.0.3 over an existing sumcoinlabs/telegram-sum-helper main branch.
-# Uses a fresh staging clone; NEVER force-pushes or touches your production servers.
+# Safely publishes v0.0.4 on top of the currently deployed GitHub repository.
+# Runs on the user's Mac, never on the production VM. No force pushes.
 set -Eeuo pipefail
 SOURCE="$(cd "$(dirname "$0")/.." && pwd)"
-for command in git gh node rsync mktemp; do
-  command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
+for tool in git gh node npm rsync mktemp; do
+  command -v "$tool" >/dev/null || { echo "Missing required tool: $tool" >&2; exit 1; }
 done
-if [[ "$(node -p "require('$SOURCE/package.json').version")" != "0.0.3" ]]; then
-  echo 'Refusing: source is not version 0.0.3.' >&2;exit 1
+if [[ "$(node -p "require('$SOURCE/package.json').version")" != '0.0.4' ]]; then
+  echo 'Unexpected package version; expected 0.0.4.' >&2; exit 1
 fi
-printf '========== VERIFY TESTS =========='; echo
-(cd "$SOURCE" && npm test)
+printf '========== LOCAL REGRESSION TESTS ==========\n'
+(cd "$SOURCE" && npm run check)
 gh auth status >/dev/null
 LOGIN="$(gh api user -q .login)"
-if [[ "$LOGIN" != 'sumcoinlabs' ]]; then echo "Signed into GitHub as $LOGIN, expected sumcoinlabs." >&2;exit 1;fi
-if ! gh repo view sumcoinlabs/telegram-sum-helper >/dev/null 2>&1; then
-  echo 'The repository does not exist. Publish v0.0.1 first with its publish-github.sh script.' >&2;exit 1
+if [[ "$LOGIN" != 'sumcoinlabs' ]]; then
+  echo "Signed in as $LOGIN; expected sumcoinlabs." >&2; exit 1
 fi
-STAGE="$(mktemp -d "$HOME/Documents/.telegram-sum-helper-publish.XXXXXX")"
+[[ -d "$HOME/Documents" ]] || { echo 'Missing ~/Documents' >&2; exit 1; }
+STAGE="$(mktemp -d "$HOME/Documents/.telegram-sum-helper-release.XXXXXX")"
 trap 'rm -rf "$STAGE"' EXIT
-printf '\n========== CLONE LATEST MAIN ==========\n'
+printf '\n========== FETCH CURRENT MAIN ==========\n'
 gh repo clone sumcoinlabs/telegram-sum-helper "$STAGE/repo" -- --branch main --single-branch
-printf '\n========== APPLY V0.0.3 SOURCE ==========\n'
-rsync -a --delete --exclude='.git/' --exclude='.env' --exclude='data/' --exclude='node_modules/' \
-  "$SOURCE/" "$STAGE/repo/"
 cd "$STAGE/repo"
-git add -A
-if git ls-files | grep -Eq '(^|/)(\.env|result\.json|.*\.log)$'; then
-  echo 'Aborted: a secret or chat export would be committed.' >&2;exit 1
+CURRENT="$(node -p "require('./package.json').version")"
+if [[ "$CURRENT" == '0.0.4' ]]; then
+  echo 'GitHub main already reports v0.0.4; checking release tag.'
+elif [[ "$CURRENT" == '0.0.3' && "$(git rev-parse --short=7 HEAD)" == '7d0c7e5' ]]; then
+  printf '\n========== APPLY ONLY RELEASE FILES ==========\n'
+  FILES=(
+    README.md CHANGELOG.md package.json
+    src/bot.js src/index.js src/languages.js src/offline.js src/telegram.js src/sync.js
+    test/offline-v004.test.js scripts/push-update.sh
+  )
+  (cd "$SOURCE" && rsync -a --relative "${FILES[@]}" "$STAGE/repo/")
+  git add -- "${FILES[@]}"
+  git diff --cached --check
+  printf '\n========== VERIFY STAGED TESTS ==========\n'
+  npm run check
+  printf '\n========== COMMIT AND PUSH ==========\n'
+  git diff --cached --stat
+  git commit -m 'Release telegram-sum-helper v0.0.4: richer offline answers and multilingual follow-ups'
+  git push origin HEAD:main
+else
+  echo "GitHub main is version $CURRENT at $(git rev-parse --short HEAD), not the tested base 7d0c7e5." >&2
+  echo 'No changes pushed. Merge/reconcile newer changes before publishing.' >&2
+  exit 1
 fi
-if git diff --cached --quiet; then
-  echo 'No changes detected. Repository already matches the local v0.0.3 release.'
-  exit 0
+printf '\n========== RELEASE TAG ==========\n'
+if git ls-remote --tags origin 'refs/tags/v0.0.4' | grep -q .; then
+  echo 'Remote v0.0.4 tag exists; leaving it unchanged.'
+else
+  git tag -a v0.0.4 -m 'telegram-sum-helper v0.0.4'
+  git push origin v0.0.4
 fi
-printf '\n========== COMMIT AND PUSH ==========\n'
-git diff --cached --stat
-git commit -m 'Release telegram-sum-helper v0.0.3: Telegram rate-limit retries and paced responses'
-git push origin HEAD:main
-if ! git ls-remote --tags origin 'refs/tags/v0.0.3' | grep -q .; then
-  git tag -a v0.0.3 -m 'telegram-sum-helper v0.0.3'
-  git push origin v0.0.3
-fi
-printf '\nPublished version 0.0.3: https://github.com/sumcoinlabs/telegram-sum-helper\n'
+printf '\nPublished: https://github.com/sumcoinlabs/telegram-sum-helper\n'
+git log -1 --oneline

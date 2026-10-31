@@ -16,7 +16,7 @@ const knowledge=new Knowledge({learned:learning.data.approved});
 const ai=new ConversationAI({apiKey:process.env.OPENAI_API_KEY||'',model:process.env.OPENAI_MODEL||'gpt-4.1-mini'});
 const client=new TelegramClient(token);
 const me=await client.getMe();
-console.log(`Sumcoin Helper v0.0.3: @${me.username} | authorized group ${config.allowedChatUsername||config.allowedChatId} | mode ${state.data.mode} | ${knowledge.documents().length} knowledge entries | AI ${ai.apiKey?'configured':'retrieval-only'}`);
+console.log(`Sumcoin Helper v0.0.4: @${me.username} | authorized group ${config.allowedChatUsername||config.allowedChatId} | mode ${state.data.mode} | ${knowledge.documents().length} knowledge entries | AI ${ai.apiKey?'configured':'retrieval-only'}`);
 await client.deleteWebhook();
 try{await client.setMyCommands();}catch(e){console.error('Optional command menu failed:',e.message);}
 for(const language of ['es','pt','fr','de','it','ru','zh']){try{await client.setMyCommands(language);}catch(e){console.error(`Optional ${language} command menu failed:`,e.message);}}

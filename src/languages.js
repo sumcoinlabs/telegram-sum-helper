@@ -8,8 +8,8 @@ const SCRIPT = [
 export const LANGUAGE_NAMES = Object.freeze({en:'English',es:'Español',pt:'Português',fr:'Français',de:'Deutsch',it:'Italiano',ru:'Русский',ar:'العربية',hi:'हिन्दी',zh:'中文',ja:'日本語',ko:'한국어',tr:'Türkçe',id:'Bahasa Indonesia'});
 const WORDS = {
   en:'how what why where when can could should please help withdraw dollars money my wallet is are from the this that send receive missing balance with do does did',
-  es:'quiero necesito retirar dólares dolares dinero billetera saldo cómo como puedo sacar cambiar vender dónde donde qué que ayuda tengo mis enviar recibir estafa gracias',
-  pt:'quero preciso retirar dinheiro carteira saldo como posso sacar vender onde quanto minha minhas enviar receber obrigado saque pix reais',
+  es:'quiero necesito retirar dólares dolares dinero billetera saldo cómo como puedo sacar cambiar vender dónde donde qué que ayuda tengo mis enviar recibir estafa gracias calcula calculado índice indice cotización cotizacion precio precios por qué porque del el la los las hoy cuánto cuanto vale',
+  pt:'quero preciso retirar dinheiro carteira saldo como posso sacar vender onde quanto minha minhas enviar receber obrigado saque pix reais pelo pela calculado calculada criptomoedas cotação cotacao valor preço preco índice indice funciona funcionamento mercado brasileiro do da dos das o os um uma meu meus você voces',
   fr:'comment puis peux retirer argent portefeuille solde pourquoi avec vous mon mes envoyer recevoir vendre achat combien aider bonjour',
   de:'wie kann ich meine mein geld abheben brieftasche guthaben warum senden empfangen verkaufen hallo bitte hilfe auszahlen',
   it:'come posso prelevare soldi portafoglio saldo perché perche mio mia inviare ricevere vendere ciao aiuto quanto',
@@ -21,6 +21,8 @@ const fold=s=>String(s||'').toLocaleLowerCase('und').normalize('NFD').replace(/[
 function localeTag(raw){const val=String(raw||'').toLowerCase().replace('_','-').split('-')[0];return Object.hasOwn(LANGUAGE_NAMES,val)?val:'en';}
 export function detectLanguage(raw,hint=''){
   const s=String(raw||'');
+  // Inverted opening punctuation is an unambiguous Spanish message signal.
+  if(/[¿¡]/u.test(s))return 'es';
   for(const [re,tag] of SCRIPT)if(re.test(s))return tag;
   const words=fold(s).match(/[a-zÀ-ÿ]+/gi)||[];
   const scores=Object.entries(WORDSETS).map(([lang,set])=>[lang,words.filter(w=>set.has(w)).length]).sort((a,b)=>b[1]-a[1]);

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.4 — 2026-10-31
+
+- Richer, structured **free** `/ask` answers combining the reviewed topic explanation, a precise editorial clarification, and related vetted facts; source URLs included. No paid API and no LLM required.
+- `/more` extends the previous answer; non-topic-specific mentions can reuse the prior topic for 30 minutes per chat/member. Only last topic and language are held in a bounded in-memory map, no raw text.
+- Expanded human-authored Portuguese and Spanish topic explanations; improved Portuguese index-question detection and restored original language for contextual follow-ups.
+- Synced documentation contributes references but not unreviewed factual assertions, reducing the risk of treating old PoW-era white-paper content as current PoS configuration.
+- `/more` added to Telegram's default and localized command menus. Previous 429 flood control, rate limiting, group authorization and observe-mode semantics preserved.
+- Additional tests for grounded answers, multilingual content, group context isolation, current-vs-historical material, and command menus.
+- Ignore incidental bot mentions in community announcements (including messages that recommend `/help`), while preserving direct mentions, questions, and explicit command replies.
+- Carries forward the 2026-10-31 canonical `www.sumcoinindex.com/white-paper.html` sync URL correction on `main`.
+
+
 ## 0.0.3 — 2026-10-31
 
 - Retry Telegram sendMessage HTTP 429 failures using the official `retry_after` delay (plus one second), with bounded attempts.

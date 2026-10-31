@@ -3,9 +3,10 @@ import { citationUrls } from './knowledge.js';
 import { githubSearch } from './github.js';
 import { t, hasTranslation, normalizeLanguage, LANGUAGE_NAMES } from './languages.js';
 import { containsSecret } from './privacy.js';
+import { offlineAnswer,isContextualFollowup } from './offline.js';
 
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
-const HELP=`Sumcoin Helper v0.0.3 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — reply in your language (AI if configured)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid\n\nQuestions in any language are welcome. The USD index is NOT a bank deposit or guaranteed withdrawal. Never share seed words or keys. Admin commands remain English.`;
+const HELP=`Sumcoin Helper v0.0.4 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid\n\nQuestions in any language are welcome. The USD index is NOT a bank deposit or guaranteed withdrawal. Never share seed words or keys. Admin commands remain English.`;
 export function commandFrom(text,botUsername=''){
   const m=/^\/([a-z_]+)(?:@([a-z0-9_]+))?(?:\s+([\s\S]*))?$/i.exec(String(text||'').trim());
   if(!m||(m[2]&&m[2].toLowerCase()!==botUsername.toLowerCase()))return null;
@@ -17,8 +18,19 @@ export function inAllowedGroup(chat,config){
   const byName=config.allowedChatUsername&&chat.username?.toLowerCase()===config.allowedChatUsername.toLowerCase();
   return Boolean(byId||byName);
 }
+// A bot mentioned in a group announcement is not necessarily being asked for help.
+// Answer direct @bot requests (including statements) and clearly directed questions,
+// while ignoring plain FYI posts containing an incidental @mention.
+export function isDirectedMention(text,botUsername){
+  if(!botUsername)return false;
+  const escaped=botUsername.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const mention=new RegExp('(?:^|\\s)@'+escaped+'\\b','i');
+  if(!mention.test(String(text||'')))return false;
+  const start=new RegExp('^\\s*(?:(?:hey|hi|hello|hola|olá)[!,.\\s]+)?@'+escaped+'\\b','i');
+  return start.test(text)||/[?¿؟？]/u.test(text);
+}
 export function createHandler({client,state,config,botUsername,knowledge,learning,ai}){
-  const preferences=new Map(),seenReplies=new Map();
+  const preferences=new Map(),seenReplies=new Map(),topicHistory=new Map();
   const now=()=>Date.now();
   async function send(m,text){return client.sendMessage(m,String(text).slice(0,3500));}
   async function admin(m){if(!m.from?.id||!inAllowedGroup(m.chat,config))return false;
@@ -34,21 +46,52 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     const fact=hasTranslation(lang,id)?t(lang,id):`${t(lang,'englishDetail')}\n${a.body}`;
     return `${fact}\n\n${t(lang,'source')}: ${citationUrls([a],1)[0]||'https://sumcoin.org/'}`;
   }
-  function offline(docs,lang){if(!docs.length)return t(lang,'none');
-    const d=docs[0];return `${t(lang,'offline')}\n\n${article(d.id,lang)}`;}
+  // Remember only a curated topic ID, never message text or wallet details.
+  // 30-minute user+chat scope, lost on restart and bounded to 500 records.
+  function recentTopic(m){
+    const key=`${m.chat.id}:${m.from?.id||m.sender_chat?.id||0}`;
+    const entry=topicHistory.get(key);
+    if(!entry||entry.until<=now()){topicHistory.delete(key);return null;}
+    return entry;
+  }
+  function rememberTopic(m,id,lang){
+    if(!id)return;
+    const key=`${m.chat.id}:${m.from?.id||m.sender_chat?.id||0}`;
+    topicHistory.set(key,{id,lang,until:now()+30*60_000});
+    if(topicHistory.size>500){
+      for(const [k,v] of topicHistory)if(v.until<=now())topicHistory.delete(k);
+      while(topicHistory.size>500)topicHistory.delete(topicHistory.keys().next().value);
+    }
+  }
+  function offline(docs,lang,expanded=false){
+    return offlineAnswer({docs,knowledge,lang,expanded});
+  }
   const CHAT_LIMIT=Math.max(1,Number(config.aiDailyLimit)||100);
-  async function ask(m,q,{automatic=false}={}){
-    const lang=languageFor(m,q);
+  async function ask(m,q,{automatic=false,expanded=false}={}){
+    let lang=languageFor(m,q);
     if(!q||q.length>1000)return automatic?undefined:send(m,t(lang,'need'));
     if(containsSecret(q))return automatic?undefined:send(m,t(lang,'security'));
     if(automatic&&state.data.mode!=='reply')return;
-    if(!state.shouldReply(m,automatic?'auto-ai':`ask-user:${m.from?.id||'unknown'}`,automatic?config.userCooldownHours:0,automatic?config.topicCooldownSeconds:8))return;
     const key=`${m.chat.id}:${m.from?.id||m.sender_chat?.id||0}`;
+    const prior=recentTopic(m);
+    // A generic follow-up about 'that' uses the previous verified topic.
+    // A new explicit topic (e.g. fees) takes priority over context.
+    const detected=classify(q).topic;
+    const contextId=!detected&&prior&&isContextualFollowup(q)?prior.id:null;
+    const pref=preferences.get(String(m.from?.id||''));
+    if((contextId||expanded)&&prior?.lang&&!(pref?.until>now()))lang=prior.lang;
+    if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?config.userCooldownHours:0,automatic?config.topicCooldownSeconds:8))return;
     const retrievalQuery=ai.apiKey?ai.retrievalQuestion(key,q):q;
-    const docs=knowledge.search(retrievalQuery,{limit:5});
+    const docs=knowledge.search(contextId?knowledge.find(contextId)?.title||q:retrievalQuery,{limit:12});
+    if(contextId){
+      const related=knowledge.find(contextId);
+      if(related){const i=docs.findIndex(d=>d.id===contextId);if(i>=0)docs.splice(i,1);docs.unshift(related);}
+    }
+    const primary=docs.find(d=>d.kind==='curated'||d.kind==='admin-approved');
+    if(primary)rememberTopic(m,primary.id,lang);
     if(!docs.length)return automatic?undefined:send(m,t(lang,'none'));
-    if(!ai.apiKey)return send(m,offline(docs,lang));
-    if(!state.consumeAiQuota(CHAT_LIMIT))return send(m,offline(docs,lang)+'\n\n(AI daily limit reached.)');
+    if(!ai.apiKey)return send(m,offline(docs,lang,expanded));
+    if(!state.consumeAiQuota(CHAT_LIMIT))return send(m,offline(docs,lang,expanded)+'\n\n(AI daily limit reached.)');
     try{
       const answer=await ai.answer({question:q,context:docs,historyKey:key,language:lang});
       await send(m,answer.text);state.record('answered-ai',true);
@@ -86,6 +129,11 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
         return send(m,docs.map((d,i)=>`${i+1}. ${d.title}\n${hasTranslation(lang,d.id)?t(lang,d.id):d.body.slice(0,260)+'…'}\n${citationUrls([d],1)[0]||''}`).join('\n\n'));
       }
       if(name==='ask')return ask(m,arg);
+      if(name==='more'){
+        const prior=recentTopic(m);
+        if(!arg&&!prior)return send(m,'Ask a Sumcoin question first with /ask, then use /more for more details.');
+        return ask(m,arg||'Explain that in more detail',{expanded:true});
+      }
       if(name==='feedback'){
         if(!group)return send(m,'Use /feedback inside the authorized group.');
         if(!m.reply_to_message?.from?.is_bot||m.reply_to_message.from.username?.toLowerCase()!==botUsername.toLowerCase())return send(m,'Reply to a bot answer with /feedback to flag it for admin review.');
@@ -119,7 +167,7 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     }
     if(!group)return;
     // Explicit bot follow-ups must work even if the user's question is "What about fees?"
-    const mention=botUsername&&new RegExp('(?:^|\\s)@'+botUsername.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(m.text);
+    const mention=isDirectedMention(m.text,botUsername);
     const repliedToBot=m.reply_to_message?.from?.username?.toLowerCase()===botUsername.toLowerCase() && m.reply_to_message?.from?.is_bot===true;
     if(mention||repliedToBot){return ask(m,m.text.replace(new RegExp('@'+botUsername,'ig'),'').trim());}
     if(containsSecret(m.text))return;

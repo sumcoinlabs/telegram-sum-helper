@@ -103,6 +103,7 @@ export class TelegramClient {
     const commands = [
       { command: 'help', description: 'Bot features and safety information' },
       { command: 'ask', description: 'Ask a Sumcoin question with sources' },
+      { command: 'more', description: 'More detail about your last question' },
       { command: 'language', description: 'Set your reply language' },
       { command: 'find', description: 'Search official Sumcoin knowledge' },
       { command: 'github', description: 'Search official Sumcoin GitHub files' },
@@ -114,6 +115,9 @@ export class TelegramClient {
       { command: 'staking', description: 'Proof-of-stake and minting' },
       { command: 'security', description: 'Scam and recovery-phrase safety' }
     ];
+    const moreDescriptions={es:'Más detalles de tu última pregunta',pt:'Mais detalhes da última pergunta',fr:'Plus de détails sur la dernière réponse',de:'Weitere Details zur letzten Antwort',it:'Più dettagli sull’ultima risposta',ru:'Подробнее о последнем ответе',zh:'查看上一条回答的更多详情'};
+    const more=commands.find(x=>x.command==='more');
+    if(moreDescriptions[languageCode])more.description=moreDescriptions[languageCode];
     const order=['help','ask','language','find','github','sources','cashout','migration','feedback'];
     if(desc[languageCode])order.forEach((name,i)=>{const item=commands.find(x=>x.command===name);if(item)item.description=desc[languageCode][i];});
     return this.call('setMyCommands',{commands,...(languageCode?{language_code:languageCode}:{})});

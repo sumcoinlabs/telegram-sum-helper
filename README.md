@@ -1,13 +1,32 @@
 # Telegram Sum Helper
 
-**v0.0.3 — multilingual Sumcoin community support bot (Node.js 20+).**
+**v0.0.4 — multilingual Sumcoin community support bot (Node.js 20+, no paid API required).**
 
-**0.0.3 hotfix:** Telegram HTTP 429 flood-control responses now automatically retry the rejected send after Telegram's `retry_after` delay (up to two retries, 120 seconds each). Group replies are sent through a queue paced at 3.1 seconds, without charging Telegram Stars or changing the optional AI configuration. Unlike a rejected 429, network timeouts are never blindly retried because delivery may have succeeded. This is a local-test-verified change; the production service must be updated and restarted.
+`telegram-sum-helper` is a source-grounded first-line assistant for the Sumcoin Telegram community. It is **not a bank, exchange, wallet recovery service, blockchain node, or human administrator**. It cannot send or access coins. It never guarantees that Sumcoin's index-derived USD reference value can be converted into cash. It uses Telegram's official Bot API and native Node.js `fetch` with **no third-party runtime packages**. The optional OpenAI integration is disabled unless `OPENAI_API_KEY` is configured.
 
+**Deployment status:** v0.0.3 was confirmed running in the authorized group with Node.js 24.22.2 and 71 synchronized official-docs chunks. v0.0.4 passes local automated tests and must be live-tested after upgrade. The service starts or remains in persisted `observe` mode unless an authorized group admin changes it; do not switch on unsolicited group answers before testing.
 
-`telegram-sum-helper` is a source-grounded first-line assistant for the Sumcoin Telegram community. It is **not a bank, exchange, wallet recovery service, blockchain node, or human administrator**. It cannot send or access coins. It never guarantees that Sumcoin's index-derived USD reference value can be converted into cash. Source code uses the official Telegram Bot API over native Node.js `fetch`, **no third-party runtime packages**, and optional OpenAI Responses API. This repository was **not forked from any Telegram bot GitHub repository**.
+## New in 0.0.4 — free answer improvements
 
-**Status:** local test suite included. Do not call this production-validated until you test in the live group. It starts in observation mode and never automatically deletes, mutes or bans people.
+- `/ask` now builds a more useful answer from the most relevant **curated, reviewed facts**, a topic-specific clarification, and related curated context, citing official sources. It is deterministic source-grounded text, **not a local LLM or generative AI**. It uses zero OpenAI calls when no API key is set.
+- `/more` expands the member's latest support topic; an explicit reply/mention like **“Can you explain that in more detail?”** may reuse the last topic. Only a topic identifier and detected language are kept in RAM, for at most 30 minutes per member+chat (500-record upper bound). No conversation text is saved for this feature.
+- Better **Brazilian Portuguese** reviewed answers for the index, wallet, staking, missing balances, migration, fees, chain and more. Spanish follow-up explanations expanded. Improved Portuguese-vs-Spanish detection for index questions. Untranslated languages remain explicitly limited rather than pretending scraped English text was translated.
+- Synced official pages are linked as additional reading, but **their unreviewed text is not automatically asserted as fact**. The older white paper and other historic PoW-era documents may not match current PoS network settings.
+- Automatic unsolicited answers stay short and require admin `/mode reply`; existing credentials, persisted mode, cooldowns, Telegram 429 retry logic, and non-root systemd installation remain unchanged.
+- `/more` is included in Telegram command menus, including Spanish and Portuguese descriptions. New deterministic regression tests cover localization, follow-up isolation, offline sources and legacy-document precautions.
+- Ordinary announcements that mention `@SumcoinHelperBot` are ignored unless they directly address the bot or ask it a question; explicit `/ask` and `/help` continue to work in observation mode.
+
+**Try in `@sumcoins`:**
+
+```
+/ask@SumcoinHelperBot How does Sumcoin calculate its value?
+/more@SumcoinHelperBot
+/ask@SumcoinHelperBot ¿Cómo puedo retirar mis Sumcoin a una cuenta bancaria?
+/ask@SumcoinHelperBot Como posso sacar meus Sumcoin para uma conta bancária?
+/ask@SumcoinHelperBot Como o valor do Sumcoin é calculado pelo índice?
+```
+
+Do not share recovery phrases or keys. All bot replies in the group are public.
 
 ## New in 0.0.2
 
@@ -30,30 +49,45 @@ A message such as **“Como puedo retirar 100 dolares de mi wallet sumcoin?”**
 
 **Scope:** official curated support knowledge about SUM/index valuation versus liquidity, Proof-of-Stake, wallets/BIP39, Slice migration, staking, sending/receiving, Electrum sync, pending transfers, public explorer checks, fees, scam avoidance, and GitHub repositories. Synchronized public documents can contain obsolete facts; conflicting legacy PoW/PoS and migration terms must be escalated rather than guessed. The bot is not a general-purpose multilingual translation engine and cannot diagnose an individual user's wallet account.
 
-## Publish v0.0.3 over the existing v0.0.2 repository
+## Publish v0.0.4 on the existing GitHub repository
 
-Download **`telegram-sum-helper-v0.0.3.zip`** into your Mac's Downloads folder, then run **one block**:
+Download `telegram-sum-helper-v0.0.4.zip` to your Mac's Downloads folder, then run:
 
 ```bash
-mkdir -p ~/Documents/telegram-sum-helper-v0.0.3 && \
-unzip -oq ~/Downloads/telegram-sum-helper-v0.0.3.zip -d ~/Documents/telegram-sum-helper-v0.0.3 && \
-cd ~/Documents/telegram-sum-helper-v0.0.3/telegram-sum-helper && \
+mkdir -p ~/Documents/telegram-sum-helper-v0.0.4 && \
+unzip -oq ~/Downloads/telegram-sum-helper-v0.0.4.zip -d ~/Documents/telegram-sum-helper-v0.0.4 && \
+cd ~/Documents/telegram-sum-helper-v0.0.4/telegram-sum-helper && \
 bash scripts/push-update.sh
 ```
 
-This verifies local tests and `gh` login `sumcoinlabs`, clones the existing `main` branch into a temporary staging directory under `~/Documents`, applies the release files, creates a normal commit, pushes it to `main`, and tags `v0.0.3`. No force push, no backup archives, no production server modifications. **The repository must exist first.** Use this updater on the existing repository; it is not a first-time repository creation script.
+The publisher checks the current known `main` base, requires GitHub CLI login `sumcoinlabs`, tests the release, copies only the changed release files into a temporary staging clone, and fast-forward pushes a normal commit and tag `v0.0.4`. **No force-push.** If GitHub changes unexpectedly, it stops rather than overwrite subsequent work.
+
+On the VM, run as `electrumbtc1` (never root):
+
+```bash
+cd /home/electrumbtc1/telegram-sum-helper && \
+export NVM_DIR="$HOME/.nvm" && \
+source "$NVM_DIR/nvm.sh" && \
+nvm use 24 >/dev/null && \
+git pull --ff-only origin main && \
+npm run check && \
+systemctl --user restart telegram-sum-helper.service && \
+systemctl --user --no-pager -l status telegram-sum-helper.service
+```
+
+The server's `.env` and `data/` (including the existing 71 cached documents, learning and mode state) are untracked and preserved. The VM needs no new ports, paid model, or background daemon.
 
 ## Install, run, and connect
 
 1. Create a new Telegram bot using `https://t.me/BotFather`, keep its API token private. Copy `.env.example` to `.env` and set `TELEGRAM_BOT_TOKEN`, `ALLOWED_CHAT_USERNAME=sumcoins` (ideally also exact `ALLOWED_CHAT_ID` after adding the bot). Keep `.env` mode 600. Do not publish tokens, seed words, or Telegram exports.
 2. Start with `INITIAL_MODE=observe`, which sends **no unsolicited answers**. Verified admin commands and explicit `/ask` still work. To read normal group messages, bot privacy mode must be disabled in BotFather, or the bot given the minimal administrator access needed; do **not** grant deletion/ban permissions.
 3. On Node.js 20+, run `npm test`, then optionally `npm run sync` (requires internet; fetches allowlisted official documentation), then `npm start`. Run `npm run sync` again and restart the bot when refreshing a cached index. A hardened systemd example is in `deploy/telegram-sum-helper.service`.
-4. Use admin `/stats` and `/learn` to inspect observed topics/languages; review the messages in Telegram for errors before `/mode reply`. **`state.json` persists old mode** if upgrading a running instance: explicitly run `/mode observe` before testing a v0.0.3 upgrade if v0.0.1 was previously in reply mode.
+4. Use admin `/stats` and `/learn` to inspect observed topics/languages; review the messages in Telegram for errors before `/mode reply`. **`state.json` persists old mode** if upgrading a running instance: explicitly run `/mode observe` before testing a v0.0.4 upgrade if v0.0.1 was previously in reply mode.
 5. For AI responses, add `OPENAI_API_KEY` and an available `OPENAI_MODEL` (example `gpt-4.1-mini`); verify model availability and pricing for your API account. Without a key, `/ask` performs local retrieval and replies with approved information. Personal message text sent through `/ask` is sent to the external AI provider **only when an API key is enabled**, with best-effort local secret detection and `store:false`. Do not post private recovery data to Telegram at all.
 
 ### Commands
 
-**Members:** `/help`, `/ask <question>`, `/language en|es|pt|fr|de|it|ru|ar|hi|zh|ja|ko|tr|id|auto`, `/cashout`, `/wallet`, `/migration`, `/staking`, `/security`, `/index`, `/fees`, `/find <keywords>`, `/github <keywords>`, `/sources`, `/rules`, `/feedback` (reply to bot answer).
+**Members:** `/help`, `/ask <question>`, `/more` (last topic), `/language en|es|pt|fr|de|it|ru|ar|hi|zh|ja|ko|tr|id|auto`, `/cashout`, `/wallet`, `/migration`, `/staking`, `/security`, `/index`, `/fees`, `/find <keywords>`, `/github <keywords>`, `/sources`, `/rules`, `/feedback` (reply to bot answer).
 
 **Verified Sumcoin group admins:** `/chatid`, `/mode observe|reply`, `/stats`, `/feedbacks`, `/learn`, `/review`, `/teach QUESTION | ANSWER | OFFICIAL_URL`, `/approve NUMBER`, `/reject NUMBER`. Only official domains from a fixed allowlist are permitted as learning sources, but admins must **actually verify the source supports the proposed answer** before approval; an official URL alone does not make a claim true.
 
@@ -68,14 +102,14 @@ Initial curated knowledge is in `knowledge/curated.json`; synchronization is res
 - https://www.sumcoin.org/migrations/
 - https://www.sumcoin.org/sumcoin-marketplace/
 - https://sumcoinwallet.org/
-- https://sumcoinindex.com/white-paper.html
+- https://www.sumcoinindex.com/white-paper.html
 - https://github.com/sumcoinlabs/sumcoin
 - https://github.com/sumcoinlabs/sumcoin_flutter
 - https://github.com/sumcoinlabs/insight-sum-api
 - https://github.com/sumcoinlabs/insight-sum-ui
 - https://github.com/sumcoinlabs/electrumx
 
-`/github` searches **allowlisted repository file paths**, not every line of GitHub source, and may be rate-limited. `/find` searches curated and locally synced approved documents. Neither feature searches arbitrary third-party links. Do not publish old fixed-rate claims, wallet-migration eligibility, exchange listing claims or live prices without fresh verification. AI can still hallucinate despite grounding; citations are appended by the application, not invented by the model.
+`/github` searches **allowlisted repository file paths**, not every line of GitHub source, and may be rate-limited. `/find` searches curated facts and locally synced official documents (which may contain outdated information). Neither feature searches arbitrary third-party links. Do not publish old fixed-rate claims, wallet-migration eligibility, exchange listing claims or live prices without fresh verification. AI can still hallucinate despite grounding; citations are appended by the application, not invented by the model.
 
 ## Security and limits
 
