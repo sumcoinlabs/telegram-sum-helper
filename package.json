@@ -1,0 +1,20 @@
+{
+  "name": "telegram-sum-helper",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Grounded, multilingual, continuously improving Sumcoin Telegram support bot",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "start": "node --env-file=.env src/index.js",
+    "test": "node --test",
+    "check": "node --check src/index.js && node --test",
+    "sync": "node scripts/sync-knowledge.mjs",
+    "search": "node scripts/search-knowledge.mjs",
+    "analyze": "node scripts/analyze-export.mjs",
+    "ingest": "node scripts/learn-export.mjs"
+  },
+  "license": "MIT"
+}

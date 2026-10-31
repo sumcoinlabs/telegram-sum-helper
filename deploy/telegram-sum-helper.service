@@ -1,0 +1,21 @@
+[Unit]
+Description=Sumcoin Telegram FAQ Helper
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=telegrambot
+Group=telegrambot
+WorkingDirectory=/opt/telegram-sum-helper
+ExecStart=/usr/bin/node --env-file=/opt/telegram-sum-helper/.env /opt/telegram-sum-helper/src/index.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/telegram-sum-helper/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
