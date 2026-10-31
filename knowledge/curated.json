@@ -3,21 +3,741 @@
   "reviewedAt": "2026-10-31",
   "editorialPolicy": "These are carefully scoped help statements, not investment, legal or financial promises. Official pages may conflict; source URLs are not proof of live functionality. Periodically review current service status.",
   "articles": [
-    {"id":"cashout","title":"Is the USD number in my wallet withdrawable?","tags":["withdraw","cash out","cashout","sell","redeem","convert","bank","dollars","USD","retirar","sacar","vender","dinero","saldo","comprar"],"text":"Sumcoin Wallet holds SUM cryptocurrency, not bank deposits or a withdrawable US dollar balance. The displayed USD figure is an index-based reference valuation, not a guaranteed sale, payout or redemption price. Sending SUM between addresses is separate from exchanging it for fiat. To receive dollars you must independently find a willing buyer and agree terms; the wallet does not provide a USD withdrawal service. Never send coins to a stranger who claims to unlock a cash withdrawal.","sources":["https://sumcoinwallet.org/","https://www.sumcoin.org/about/","https://www.sumcoin.org/sumcoin-marketplace/"]},
-    {"id":"index","title":"What does the Sumcoin index rate mean?","tags":["price","market cap","marketcap","index","value","worth","top 100","quote","liquidity","valuation","rate"],"text":"Sumcoin describes SUM as a cryptocurrency with a reference value calculated from an algorithm tracking the top 100 cryptocurrencies by market capitalization. An algorithmic index rate is different from an executable sale price and does not imply exchange liquidity, a guaranteed buyer, or a redeemable US dollar balance. Live quotes should only be obtained from a current official rates service; do not treat static examples as current quotes.","sources":["https://www.sumcoin.org/about/","https://github.com/sumcoinlabs/sumcoin"]},
-    {"id":"p2p","title":"How can SUM be used for payment and trade?","tags":["pay","payment","peer to peer","p2p","merchant","accept","spend","buy","sell","trade","marketplace","goods","services"],"text":"SUM can be transferred directly between compatible wallets to pay another person who agrees to accept SUM. The Sumcoin project describes peer-to-peer trade as a core use case, and lists a marketplace for people to offer goods and services. Availability of a buyer, seller, particular merchant, kiosk, or marketplace listing is not guaranteed. Check counterparty trust and confirm all details before sending coins.","sources":["https://www.sumcoin.org/sumcoin-marketplace/","https://www.sumcoin.org/about/"]},
-    {"id":"wallet","title":"What is Sumcoin Wallet?","tags":["wallet","app","iphone","android","receive","send","address","mobile","self custody","electrum"],"text":"The Sumcoin Wallet mobile application is described by its official website as a self-custody wallet using the Electrum protocol. Wallet users control their own recovery information; the developer is not a custodian or bank and cannot provide a fiat withdrawal. Use download links from the official Sumcoin Wallet site and verify the app before entering sensitive information.","sources":["https://sumcoinwallet.org/","https://github.com/sumcoinlabs/sumcoin_flutter"]},
-    {"id":"seed","title":"How do I protect or recover a wallet?","tags":["recover","restore","seed","mnemonic","24 words","recovery words","phrase","lost phone","backup","private key","password"],"text":"Official Sumcoin Wallet materials describe a 24-word BIP39 recovery phrase. Keep the words offline, private and in the exact order; never post them to Telegram or any website or send them to support staff. The phrase can restore a compatible wallet, but older legacy Slice/SPV wallets may use a different derivation scheme and cannot automatically be imported as modern Electrum BIP39 wallets. If you are unsure what wallet created your phrase, do not experiment with random recovery websites: consult official migration and wallet guidance.","sources":["https://sumcoinwallet.org/","https://www.sumcoin.org/migrations/"]},
-    {"id":"legacy","title":"Can I import Slice Wallet into the current wallet?","tags":["slice","old wallet","legacy","spv","bip32","bip39","migration","migrate","proof of work","pow","pos","transfer old coins","swap old"],"text":"Legacy Slice Wallet / original proof-of-work balances are not interchangeable with the current Sumcoin Wallet's Electrum/BIP39 recovery format. The official project has published a separate, eligibility-based migration process for some legacy holdings, with manual review and terms that can change. Do not promise 1:1 automatic conversion. Review the current official migration page directly before taking action. Never share seed phrases or private keys as proof of ownership; confirm any payment requests solely through verified official channels.","sources":["https://www.sumcoin.org/migrations/","https://sumcoinwallet.org/"]},
-    {"id":"staking","title":"Does Sumcoin use proof-of-stake?","tags":["staking","stake","mint","minting","reward","interest","proof of stake","proof-of-stake","pos","validator","core"],"text":"Current official Sumcoin materials describe the network as proof-of-stake, with staking/minting associated with compatible Sumcoin Core software and network participation. The public sumcoin_flutter repository notes that the mobile wallet will not mint. Eligibility, yields, setup and protocol parameters require checking the actual current Core release; do not promise fixed returns. Some older website pages still contain legacy mining text, so prefer current code and release documentation for technical instructions.","sources":["https://www.sumcoin.org/about/","https://github.com/sumcoinlabs/sumcoin","https://github.com/sumcoinlabs/sumcoin_flutter"]},
-    {"id":"pending","title":"My transaction is pending or missing","tags":["transaction","pending","unconfirmed","confirmation","not received","missing","sent","received","txid","explorer","stuck","deposit"],"text":"A transaction may be pending or not displayed because it has not received confirmations, a wallet is connected to a stale backend, or the wrong chain/address was used. Verify the transaction ID on an official block explorer and compare sender/receiver addresses and confirmations. Do not publish private keys or seed words. If you cannot identify a transaction, use the wallet's official support path and share only public transaction IDs when appropriate. Confirmed blockchain transfers generally cannot be reversed.","sources":["https://www.sumcoin.org/faq/","https://github.com/sumcoinlabs/insight-sum-api","https://sumcoinwallet.org/"]},
-    {"id":"missing-balance","title":"Why is my SUM balance zero?","tags":["balance zero","zero balance","disappeared","lost coins","funds missing","wallet empty","not showing","electrum","sync","restored","empty wallet"],"text":"An empty wallet screen does not by itself prove funds disappeared. First verify that you are in the correct wallet app and on the expected blockchain, using the correct recovery method and address. Check connection status and public address history in an official explorer. Legacy Slice/SPV and new Sumcoin Wallet recovery schemes differ. Do not share your recovery phrase, and do not pay anyone claiming they can unlock a balance.","sources":["https://sumcoinwallet.org/","https://www.sumcoin.org/migrations/","https://github.com/sumcoinlabs/sumcoin_flutter"]},
-    {"id":"fees","title":"Are Sumcoin transfers free?","tags":["network fee","transaction fee","fees","cost","send fee","miner fee"],"text":"There is no fee to download the self-custody Sumcoin Wallet, but transferring SUM on the blockchain may require a network transaction fee. Fees are network costs and should not be confused with a payment required by someone claiming to unlock a USD withdrawal. Verify any fees presented by your installed compatible wallet rather than relying on old fee estimates on webpages.","sources":["https://sumcoinwallet.org/","https://www.sumcoin.org/faq/"]},
-    {"id":"security","title":"How do I avoid Sumcoin wallet scams?","tags":["scam","fraud","phishing","seed phrase","private key","support","unlock fee","verify","impersonator","hacked"],"text":"No legitimate group moderator or helper bot needs your recovery words, password or private keys. Ignore unsolicited DMs offering to release withdrawals, validate a wallet, recover coins for an upfront fee, or direct you to a seed-entry website. Never follow a payment request just because someone claims to represent Sumcoin. Confirm the official site and documentation yourself.","sources":["https://sumcoinwallet.org/","https://www.sumcoin.org/report-a-scam/"]},
-    {"id":"irreversible","title":"Can a SUM transaction be cancelled or reversed?","tags":["cancel","reverse","refund","wrong address","undo","sent wrong","reversal","reimburse"],"text":"The official Sumcoin FAQ explains that confirmed cryptocurrency transfers cannot be cancelled or undone by the website or developers. Check addresses carefully before sending. If you sent to a wrong address, only a person who controls that address may voluntarily return the funds. No legitimate administrator can reverse a confirmed on-chain transaction.","sources":["https://www.sumcoin.org/faq/"]},
-    {"id":"github","title":"Where is the Sumcoin source code and documentation?","tags":["github","source code","repository","core","developer","docs","electrumx","api","explorer","flutter","open source"],"text":"Official public development repositories include sumcoinlabs/sumcoin (Sumcoin Core), sumcoinlabs/sumcoin_flutter (mobile Electrum wallet), sumcoinlabs/insight-sum-api and insight-sum-ui (explorer interfaces), and sumcoinlabs/electrumx (Electrum server). Repository branches and release status vary; follow the exact repository's current documentation and avoid guessing deployment instructions from older forks.","sources":["https://github.com/sumcoinlabs/sumcoin","https://github.com/sumcoinlabs/sumcoin_flutter","https://github.com/sumcoinlabs/insight-sum-api","https://github.com/sumcoinlabs/electrumx"]},
-    {"id":"chain","title":"How does Sumcoin work?","tags":["sumcoin","sum","what is","blockchain","chain","currency","consensus","decentralized","proof of stake","history","2018"],"text":"Sumcoin is a peer-to-peer Layer 1 cryptocurrency with index-based reference valuation. Its development began in 2018 on proof-of-work and subsequently moved to proof-of-stake. SUM is a native blockchain currency, not an ownership share or a bank account. Payments are recorded on a distributed ledger and are generally irreversible after confirmation.","sources":["https://www.sumcoin.org/about/","https://github.com/sumcoinlabs/sumcoin","https://www.sumcoinindex.com/news/sumcoin-at-5-and-whats-next.php"]},
-    {"id":"buy","title":"Where can I buy or sell SUM?","tags":["buy","sell","exchange","listed","trading","liquidity","coinbase","atm","kiosk","cash","withdraw"],"text":"Sumcoin emphasizes direct peer-to-peer transfer and trading. The project mentions a marketplace and some participating crypto kiosks, but their current ability to buy or sell SUM must be confirmed independently. An index value is not a guaranteed sale price or liquid bid. The wallet itself is not an exchange, broker or cash withdrawal service; the bot cannot promise that any specific exchange or kiosk supports SUM.","sources":["https://www.sumcoin.org/sumcoin-marketplace/","https://sumcoinwallet.org/"]},
-    {"id":"language","title":"What language is used in the Telegram group?","tags":["language","english","spanish","espanol","translation","translate","group rules"],"text":"This Sumcoin Telegram group uses English for discussion. If your question is in another language, please translate it to English so members can assist. The bot can still provide a basic safety message in Spanish where appropriate.","sources":["https://t.me/sumcoins"]}
+    {
+      "id": "cashout",
+      "title": "Is the USD number in my wallet withdrawable?",
+      "tags": [
+        "withdraw",
+        "cash out",
+        "cashout",
+        "sell",
+        "redeem",
+        "convert",
+        "bank",
+        "dollars",
+        "USD",
+        "retirar",
+        "sacar",
+        "vender",
+        "dinero",
+        "saldo",
+        "comprar"
+      ],
+      "text": "Sumcoin Wallet holds SUM cryptocurrency, not bank deposits or a withdrawable US dollar balance. The displayed USD figure is an index-based reference valuation, not a guaranteed sale, payout or redemption price. Sending SUM between addresses is separate from exchanging it for fiat. To receive dollars you must independently find a willing buyer and agree terms; the wallet does not provide a USD withdrawal service. Never send coins to a stranger who claims to unlock a cash withdrawal.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://www.sumcoin.org/about/",
+        "https://www.sumcoin.org/sumcoin-marketplace/"
+      ]
+    },
+    {
+      "id": "index",
+      "title": "What does the Sumcoin index rate mean?",
+      "tags": [
+        "price",
+        "market cap",
+        "marketcap",
+        "index",
+        "value",
+        "worth",
+        "top 100",
+        "quote",
+        "liquidity",
+        "valuation",
+        "rate"
+      ],
+      "text": "Sumcoin describes SUM as a cryptocurrency with a reference value calculated from an algorithm tracking the top 100 cryptocurrencies by market capitalization. An algorithmic index rate is different from an executable sale price and does not imply exchange liquidity, a guaranteed buyer, or a redeemable US dollar balance. Live quotes should only be obtained from a current official rates service; do not treat static examples as current quotes.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://github.com/sumcoinlabs/sumcoin"
+      ]
+    },
+    {
+      "id": "p2p",
+      "title": "How can SUM be used for payment and trade?",
+      "tags": [
+        "pay",
+        "payment",
+        "peer to peer",
+        "p2p",
+        "merchant",
+        "accept",
+        "spend",
+        "buy",
+        "sell",
+        "trade",
+        "marketplace",
+        "goods",
+        "services"
+      ],
+      "text": "SUM can be transferred directly between compatible wallets to pay another person who agrees to accept SUM. The Sumcoin project describes peer-to-peer trade as a core use case, and lists a marketplace for people to offer goods and services. Availability of a buyer, seller, particular merchant, kiosk, or marketplace listing is not guaranteed. Check counterparty trust and confirm all details before sending coins.",
+      "sources": [
+        "https://www.sumcoin.org/sumcoin-marketplace/",
+        "https://www.sumcoin.org/about/"
+      ]
+    },
+    {
+      "id": "wallet",
+      "title": "What is Sumcoin Wallet?",
+      "tags": [
+        "wallet",
+        "app",
+        "iphone",
+        "android",
+        "receive",
+        "send",
+        "address",
+        "mobile",
+        "self custody",
+        "electrum"
+      ],
+      "text": "The Sumcoin Wallet mobile application is described by its official website as a self-custody wallet using the Electrum protocol. Wallet users control their own recovery information; the developer is not a custodian or bank and cannot provide a fiat withdrawal. Use download links from the official Sumcoin Wallet site and verify the app before entering sensitive information.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://github.com/sumcoinlabs/sumcoin_flutter"
+      ]
+    },
+    {
+      "id": "seed",
+      "title": "How do I protect or recover a wallet?",
+      "tags": [
+        "recover",
+        "restore",
+        "seed",
+        "mnemonic",
+        "24 words",
+        "recovery words",
+        "phrase",
+        "lost phone",
+        "backup",
+        "private key",
+        "password"
+      ],
+      "text": "Official Sumcoin Wallet materials describe a 24-word BIP39 recovery phrase. Keep the words offline, private and in the exact order; never post them to Telegram or any website or send them to support staff. The phrase can restore a compatible wallet, but older legacy Slice/SPV wallets may use a different derivation scheme and cannot automatically be imported as modern Electrum BIP39 wallets. If you are unsure what wallet created your phrase, do not experiment with random recovery websites: consult official migration and wallet guidance.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://www.sumcoin.org/migrations/"
+      ]
+    },
+    {
+      "id": "legacy",
+      "title": "Can I import Slice Wallet into the current wallet?",
+      "tags": [
+        "slice",
+        "old wallet",
+        "legacy",
+        "spv",
+        "bip32",
+        "bip39",
+        "migration",
+        "migrate",
+        "proof of work",
+        "pow",
+        "pos",
+        "transfer old coins",
+        "swap old"
+      ],
+      "text": "Legacy Slice Wallet / original proof-of-work balances are not interchangeable with the current Sumcoin Wallet's Electrum/BIP39 recovery format. The official project has published a separate, eligibility-based migration process for some legacy holdings, with manual review and terms that can change. Do not promise 1:1 automatic conversion. Review the current official migration page directly before taking action. Never share seed phrases or private keys as proof of ownership; confirm any payment requests solely through verified official channels.",
+      "sources": [
+        "https://www.sumcoin.org/migrations/",
+        "https://sumcoinwallet.org/"
+      ]
+    },
+    {
+      "id": "staking",
+      "title": "Does Sumcoin use proof-of-stake?",
+      "tags": [
+        "staking",
+        "stake",
+        "mint",
+        "minting",
+        "reward",
+        "interest",
+        "proof of stake",
+        "proof-of-stake",
+        "pos",
+        "validator",
+        "core"
+      ],
+      "text": "Current official Sumcoin materials describe the network as proof-of-stake, with staking/minting associated with compatible Sumcoin Core software and network participation. The public sumcoin_flutter repository notes that the mobile wallet will not mint. Eligibility, yields, setup and protocol parameters require checking the actual current Core release; do not promise fixed returns. Some older website pages still contain legacy mining text, so prefer current code and release documentation for technical instructions.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://github.com/sumcoinlabs/sumcoin",
+        "https://github.com/sumcoinlabs/sumcoin_flutter"
+      ]
+    },
+    {
+      "id": "pending",
+      "title": "My transaction is pending or missing",
+      "tags": [
+        "transaction",
+        "pending",
+        "unconfirmed",
+        "confirmation",
+        "not received",
+        "missing",
+        "sent",
+        "received",
+        "txid",
+        "explorer",
+        "stuck",
+        "deposit"
+      ],
+      "text": "A transaction may be pending or not displayed because it has not received confirmations, a wallet is connected to a stale backend, or the wrong chain/address was used. Verify the transaction ID on an official block explorer and compare sender/receiver addresses and confirmations. Do not publish private keys or seed words. If you cannot identify a transaction, use the wallet's official support path and share only public transaction IDs when appropriate. Confirmed blockchain transfers generally cannot be reversed.",
+      "sources": [
+        "https://www.sumcoin.org/faq/",
+        "https://github.com/sumcoinlabs/insight-sum-api",
+        "https://sumcoinwallet.org/"
+      ]
+    },
+    {
+      "id": "missing-balance",
+      "title": "Why is my SUM balance zero?",
+      "tags": [
+        "balance zero",
+        "zero balance",
+        "disappeared",
+        "lost coins",
+        "funds missing",
+        "wallet empty",
+        "not showing",
+        "electrum",
+        "sync",
+        "restored",
+        "empty wallet"
+      ],
+      "text": "An empty wallet screen does not by itself prove funds disappeared. First verify that you are in the correct wallet app and on the expected blockchain, using the correct recovery method and address. Check connection status and public address history in an official explorer. Legacy Slice/SPV and new Sumcoin Wallet recovery schemes differ. Do not share your recovery phrase, and do not pay anyone claiming they can unlock a balance.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://www.sumcoin.org/migrations/",
+        "https://github.com/sumcoinlabs/sumcoin_flutter"
+      ]
+    },
+    {
+      "id": "fees",
+      "title": "Are Sumcoin transfers free?",
+      "tags": [
+        "network fee",
+        "transaction fee",
+        "fees",
+        "cost",
+        "send fee",
+        "miner fee"
+      ],
+      "text": "There is no fee to download the self-custody Sumcoin Wallet, but transferring SUM on the blockchain may require a network transaction fee. Fees are network costs and should not be confused with a payment required by someone claiming to unlock a USD withdrawal. Verify any fees presented by your installed compatible wallet rather than relying on old fee estimates on webpages.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://www.sumcoin.org/faq/"
+      ]
+    },
+    {
+      "id": "security",
+      "title": "How do I avoid Sumcoin wallet scams?",
+      "tags": [
+        "scam",
+        "fraud",
+        "phishing",
+        "seed phrase",
+        "private key",
+        "support",
+        "unlock fee",
+        "verify",
+        "impersonator",
+        "hacked"
+      ],
+      "text": "No legitimate group moderator or helper bot needs your recovery words, password or private keys. Ignore unsolicited DMs offering to release withdrawals, validate a wallet, recover coins for an upfront fee, or direct you to a seed-entry website. Never follow a payment request just because someone claims to represent Sumcoin. Confirm the official site and documentation yourself.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://www.sumcoin.org/report-a-scam/"
+      ]
+    },
+    {
+      "id": "irreversible",
+      "title": "Can a SUM transaction be cancelled or reversed?",
+      "tags": [
+        "cancel",
+        "reverse",
+        "refund",
+        "wrong address",
+        "undo",
+        "sent wrong",
+        "reversal",
+        "reimburse"
+      ],
+      "text": "The official Sumcoin FAQ explains that confirmed cryptocurrency transfers cannot be cancelled or undone by the website or developers. Check addresses carefully before sending. If you sent to a wrong address, only a person who controls that address may voluntarily return the funds. No legitimate administrator can reverse a confirmed on-chain transaction.",
+      "sources": [
+        "https://www.sumcoin.org/faq/"
+      ]
+    },
+    {
+      "id": "github",
+      "title": "Where is the Sumcoin source code and documentation?",
+      "tags": [
+        "github",
+        "source code",
+        "repository",
+        "core",
+        "developer",
+        "docs",
+        "electrumx",
+        "api",
+        "explorer",
+        "flutter",
+        "open source"
+      ],
+      "text": "Official public development repositories include sumcoinlabs/sumcoin (Sumcoin Core), sumcoinlabs/sumcoin_flutter (mobile Electrum wallet), sumcoinlabs/insight-sum-api and insight-sum-ui (explorer interfaces), and sumcoinlabs/electrumx (Electrum server). Repository branches and release status vary; follow the exact repository's current documentation and avoid guessing deployment instructions from older forks.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoin",
+        "https://github.com/sumcoinlabs/sumcoin_flutter",
+        "https://github.com/sumcoinlabs/insight-sum-api",
+        "https://github.com/sumcoinlabs/electrumx"
+      ]
+    },
+    {
+      "id": "chain",
+      "title": "How does Sumcoin work?",
+      "tags": [
+        "sumcoin",
+        "sum",
+        "what is",
+        "blockchain",
+        "chain",
+        "currency",
+        "consensus",
+        "decentralized",
+        "proof of stake",
+        "history",
+        "2018"
+      ],
+      "text": "Sumcoin is a peer-to-peer Layer 1 cryptocurrency with index-based reference valuation. Its development began in 2018 on proof-of-work and subsequently moved to proof-of-stake. SUM is a native blockchain currency, not an ownership share or a bank account. Payments are recorded on a distributed ledger and are generally irreversible after confirmation.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://github.com/sumcoinlabs/sumcoin",
+        "https://www.sumcoinindex.com/news/sumcoin-at-5-and-whats-next.php"
+      ]
+    },
+    {
+      "id": "buy",
+      "title": "Where can I buy or sell SUM?",
+      "tags": [
+        "buy",
+        "sell",
+        "exchange",
+        "listed",
+        "trading",
+        "liquidity",
+        "coinbase",
+        "atm",
+        "kiosk",
+        "cash",
+        "withdraw"
+      ],
+      "text": "Sumcoin emphasizes direct peer-to-peer transfer and trading. The project mentions a marketplace and some participating crypto kiosks, but their current ability to buy or sell SUM must be confirmed independently. An index value is not a guaranteed sale price or liquid bid. The wallet itself is not an exchange, broker or cash withdrawal service; the bot cannot promise that any specific exchange or kiosk supports SUM.",
+      "sources": [
+        "https://www.sumcoin.org/sumcoin-marketplace/",
+        "https://sumcoinwallet.org/"
+      ]
+    },
+    {
+      "id": "language",
+      "title": "What language is used in the Telegram group?",
+      "tags": [
+        "language",
+        "english",
+        "spanish",
+        "espanol",
+        "translation",
+        "translate",
+        "group rules"
+      ],
+      "text": "This Sumcoin Telegram group uses English for discussion. If your question is in another language, please translate it to English so members can assist. The bot can still provide a basic safety message in Spanish where appropriate.",
+      "sources": [
+        "https://t.me/sumcoins"
+      ]
+    },
+    {
+      "id": "wallet-connect",
+      "title": "Why does Sumcoin Wallet show connection errors?",
+      "tags": [
+        "wallet connectivity",
+        "electrum server",
+        "offline",
+        "sync",
+        "server unavailable",
+        "wallet disconnected"
+      ],
+      "text": "When a mobile wallet cannot reach its Electrum backend, its displayed balance or transaction history may be stale. Check your internet connection, the app sync indicator and the public address history in an explorer. Do not enter a recovery phrase into a website to repair a connection.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://github.com/sumcoinlabs/sumcoin_flutter"
+      ]
+    },
+    {
+      "id": "wallet-restore",
+      "title": "How do I restore Sumcoin Wallet safely?",
+      "tags": [
+        "restore",
+        "recover",
+        "bip39",
+        "phrase",
+        "recovery path",
+        "wallet recovery"
+      ],
+      "text": "Identify which app originally created the wallet. Modern Sumcoin Wallet materials describe BIP39 recovery. Older Slice/SPV recovery may not reproduce the same addresses. Restore only on a legitimate compatible wallet installed on a trusted device and keep all recovery words private.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://www.sumcoin.org/migrations/"
+      ]
+    },
+    {
+      "id": "wallet-send",
+      "title": "How do I send SUM to someone?",
+      "tags": [
+        "send sum",
+        "wallet send",
+        "transfer",
+        "recipient",
+        "destination address"
+      ],
+      "text": "In a compatible Sumcoin Wallet, confirm you have the receiving address, sufficient SUM for the amount and any network fee, then verify the destination before authorizing. A successfully confirmed on-chain transfer is generally irreversible. The Telegram bot cannot send coins or inspect private wallets.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://www.sumcoin.org/faq/"
+      ]
+    },
+    {
+      "id": "wallet-receive",
+      "title": "How do I receive SUM?",
+      "tags": [
+        "receive sum",
+        "deposit address",
+        "receiving address",
+        "qr code"
+      ],
+      "text": "Use a compatible Sumcoin wallet to obtain your public receive address, verify that the sender is using the same Sumcoin network, and confirm receipt from the public blockchain. Public addresses are shareable but reveal transaction history; never share a recovery phrase or private key.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://github.com/sumcoinlabs/insight-sum-api"
+      ]
+    },
+    {
+      "id": "wallet-platform",
+      "title": "Where can I download the current Sumcoin wallet?",
+      "tags": [
+        "wallet download",
+        "ios",
+        "android",
+        "app store",
+        "play store",
+        "official app"
+      ],
+      "text": "Start from the official Sumcoin Wallet website for download links and compatibility information. Store availability, current version and platform support can change; this bot does not claim a store listing exists until verified. Avoid lookalike applications and seed-entry websites.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://github.com/sumcoinlabs/sumcoin_flutter"
+      ]
+    },
+    {
+      "id": "electrum",
+      "title": "What is an Electrum server and why does it matter?",
+      "tags": [
+        "electrum",
+        "server",
+        "wallet backend",
+        "electrumx",
+        "connection status"
+      ],
+      "text": "An Electrum-compatible backend serves wallet history and public-address information without requiring the app to download the full blockchain. A stale or unreachable server can cause incomplete wallet displays. The public explorer provides a useful independent comparison; it does not repair wallet keys.",
+      "sources": [
+        "https://github.com/sumcoinlabs/electrumx",
+        "https://sumcoinwallet.org/"
+      ]
+    },
+    {
+      "id": "index-math",
+      "title": "What does market capitalization mean for the Sumcoin index?",
+      "tags": [
+        "market cap formula",
+        "circulating supply",
+        "top 100",
+        "index math",
+        "market capitalization calculation"
+      ],
+      "text": "Market capitalization is generally calculated as an asset price multiplied by its circulating supply. Sumcoin describes its index as tracking the 100 largest cryptocurrencies by market cap. That selection is not itself a complete specification of Sumcoin index weighting or divisor; do not guess an unpublished calculation formula.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://www.sumcoinindex.com/white-paper.html"
+      ]
+    },
+    {
+      "id": "index-data",
+      "title": "Where does the Sumcoin index get its input data?",
+      "tags": [
+        "index source",
+        "cryptocompare",
+        "quote input",
+        "index data",
+        "market feeds"
+      ],
+      "text": "Sumcoin describes its index as tracking cryptocurrency market information from many data points. The currently active upstream quote providers, filtering, weighting rules and timestamps should be verified from the maintained index implementation rather than inferred from older FAQs. A published reference value is not a guaranteed executable transaction price.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://www.sumcoinindex.com/white-paper.html"
+      ]
+    },
+    {
+      "id": "index-live",
+      "title": "How do I check a current SUM index rate?",
+      "tags": [
+        "current price",
+        "price now",
+        "live price",
+        "usd quote",
+        "sum usd",
+        "sum price"
+      ],
+      "text": "Use /price for a read-only check of a fixed official Sumcoin rates API. Results are timestamped when successfully retrieved. The value is a reference index rate, not a guaranteed cash-out, bank balance, or firm market bid.",
+      "sources": [
+        "https://www.sumcoin.org/",
+        "https://rate.slicewallet.org/api/rates"
+      ]
+    },
+    {
+      "id": "index-vs-liquidity",
+      "title": "Does the SUM index rate guarantee liquidity?",
+      "tags": [
+        "liquidity",
+        "guarantee",
+        "spread",
+        "buyer",
+        "executed price",
+        "order book"
+      ],
+      "text": "No. The calculated SUM reference rate is distinct from what a counterparty will pay. Availability of a buyer, seller, exchange, kiosk, or merchant has to be confirmed independently. The bot never promises that an index value is immediately redeemable in dollars.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://www.sumcoin.org/sumcoin-marketplace/"
+      ]
+    },
+    {
+      "id": "tx-explorer",
+      "title": "How can I verify a Sumcoin transaction?",
+      "tags": [
+        "txid",
+        "transaction id",
+        "explorer",
+        "confirmations",
+        "lookup transaction"
+      ],
+      "text": "A transaction ID is a public hexadecimal identifier. The /tx command can request read-only information from the approved public explorer. Verify network, confirmations, and recipient address independently; a failed explorer request does not prove that a transaction failed.",
+      "sources": [
+        "https://github.com/sumcoinlabs/insight-sum-api",
+        "https://sumcoin.space/"
+      ]
+    },
+    {
+      "id": "address-history",
+      "title": "Can I look up a public SUM address?",
+      "tags": [
+        "public address",
+        "address explorer",
+        "address balance",
+        "transaction history"
+      ],
+      "text": "A blockchain explorer can display public address balance and history without recovery words. /address checks a public Sumcoin address against a fixed explorer endpoint. Posting an address in this Telegram group reveals it to everyone; never post private keys, passwords, or recovery phrases.",
+      "sources": [
+        "https://github.com/sumcoinlabs/insight-sum-api",
+        "https://sumcoin.space/"
+      ]
+    },
+    {
+      "id": "confirmations",
+      "title": "What are blockchain confirmations?",
+      "tags": [
+        "block confirmations",
+        "unconfirmed",
+        "confirmation count",
+        "confirmed transaction"
+      ],
+      "text": "A transaction gains confirmations as blocks build on the block containing it. Required confirmation counts depend on the recipient or service and current network policy. A zero-confirmation transaction is not yet confirmed, and an inaccessible explorer cannot establish finality.",
+      "sources": [
+        "https://github.com/sumcoinlabs/insight-sum-api",
+        "https://www.sumcoin.org/faq/"
+      ]
+    },
+    {
+      "id": "staking-check",
+      "title": "Why is Sumcoin Core not staking?",
+      "tags": [
+        "not staking",
+        "staking not working",
+        "stake status",
+        "minting not working",
+        "core sync"
+      ],
+      "text": "On a proof-of-stake network, check that the compatible Core node is synchronized and that current wallet/staking requirements are met. Do not use old proof-of-work mining instructions to diagnose the present network. Reward timing and eligibility depend on the running Core version, not on a bot prediction.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoin",
+        "https://www.sumcoin.org/about/"
+      ]
+    },
+    {
+      "id": "staking-mobile",
+      "title": "Does the mobile Sumcoin Wallet mint coins?",
+      "tags": [
+        "mobile staking",
+        "flutter staking",
+        "mint mobile",
+        "staking app"
+      ],
+      "text": "The public sumcoin_flutter repository documents that the mobile wallet does not mint. Use a compatible Sumcoin Core installation for staking-related functionality and verify the current release and its requirements.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoin_flutter",
+        "https://github.com/sumcoinlabs/sumcoin"
+      ]
+    },
+    {
+      "id": "migration-recovery",
+      "title": "Why can older Slice recovery words produce a different address?",
+      "tags": [
+        "slice derivation",
+        "legacy bip32",
+        "bip39 incompatibility",
+        "wrong address migration"
+      ],
+      "text": "Older Slice/SPV and the current Electrum/BIP39 wallet do not necessarily share derivation paths. Entering identical recovery words in incompatible software can yield different addresses. Do not assume old coins are gone; consult official migration eligibility and do not expose recovery words.",
+      "sources": [
+        "https://www.sumcoin.org/migrations/",
+        "https://sumcoinwallet.org/"
+      ]
+    },
+    {
+      "id": "migration-terms",
+      "title": "Are Sumcoin migration fees and eligibility fixed?",
+      "tags": [
+        "migration cost",
+        "migration fee",
+        "eligibility",
+        "manual review"
+      ],
+      "text": "Migration rules and costs may change, so the bot must not quote a fixed current fee or promise a conversion. Read the current official migration terms and verify requests through trusted project channels. Nobody in a Telegram DM should require your seed phrase to process eligibility.",
+      "sources": [
+        "https://www.sumcoin.org/migrations/"
+      ]
+    },
+    {
+      "id": "sumcoinlib",
+      "title": "What is sumcoinlib for developers?",
+      "tags": [
+        "sumcoinlib",
+        "dart library",
+        "flutter plugin",
+        "utxo",
+        "transaction signing",
+        "hierarchical keys"
+      ],
+      "text": "sumcoinlib is the project's Dart and Flutter library for Sumcoin addresses, hierarchical deterministic keys, and UTXO transaction construction/signing. Its README and migration notes distinguish library version compatibility from consensus activation; do not assume testnet, SegWit, Taproot or native platform support without current verification.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoinlib",
+        "https://github.com/sumcoinlabs/sumcoinlib/blob/master/MIGRATION.md"
+      ]
+    },
+    {
+      "id": "core-rpc",
+      "title": "How should a developer use Sumcoin Core RPC safely?",
+      "tags": [
+        "core rpc",
+        "sumcoind rpc",
+        "json rpc",
+        "rpc credentials",
+        "node integration"
+      ],
+      "text": "Core RPC provides node-related operations, but access must be authenticated and restricted. Do not expose wallet RPC on public network interfaces or paste credentials into Telegram. Some older Core documentation targets previous chain versions; compare the actual running release before following old commands.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoin",
+        "https://github.com/sumcoinlabs/sumcoin/tree/main/doc"
+      ]
+    },
+    {
+      "id": "insight-api",
+      "title": "Can developers read chain history with an API?",
+      "tags": [
+        "insight api",
+        "rest api",
+        "read only explorer",
+        "tx api",
+        "addr api"
+      ],
+      "text": "The public insight-sum-api documentation describes GET endpoints for transaction IDs and address summaries. The bot uses only read-only GET queries on fixed approved hosts, with input validation and short timeouts. Explorer output may be stale or unavailable; none of these calls authorizes spending.",
+      "sources": [
+        "https://github.com/sumcoinlabs/insight-sum-api",
+        "https://sumcoin.space/"
+      ]
+    },
+    {
+      "id": "historical-pow",
+      "title": "Why do older Sumcoin documents mention mining?",
+      "tags": [
+        "pow",
+        "mining history",
+        "old white paper",
+        "proof of work",
+        "obsolete instructions"
+      ],
+      "text": "Sumcoin began with proof-of-work and later migrated to proof-of-stake. Older README files, white papers and guides may describe the old mining network. Treat those as historical documents unless verified against current code and release notes; never present an old block reward or algorithm parameter as a current staking promise.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoin",
+        "https://www.sumcoin.org/about/"
+      ]
+    },
+    {
+      "id": "release-notes",
+      "title": "How can I find current Sumcoin software releases?",
+      "tags": [
+        "new version",
+        "release notes",
+        "core download",
+        "app update",
+        "changelog"
+      ],
+      "text": "Check official GitHub repositories and official wallet download pages for tagged releases and changelogs. A branch tip or repository README may not be a stable binary release. Check network compatibility and publisher authenticity before updating software.",
+      "sources": [
+        "https://github.com/sumcoinlabs/sumcoin/releases",
+        "https://github.com/sumcoinlabs/sumcoin_flutter",
+        "https://github.com/sumcoinlabs/sumcoinlib"
+      ]
+    },
+    {
+      "id": "support-privacy",
+      "title": "What information is safe to post for wallet support?",
+      "tags": [
+        "privacy",
+        "support",
+        "txid share",
+        "address public",
+        "private keys"
+      ],
+      "text": "A transaction ID is public, and a receiving address is public but can expose payment history. You should never post seed words, private keys, wallet passwords, recovery screenshots, or authentication codes. This group is public to members, and the helper has no access to your wallet secrets.",
+      "sources": [
+        "https://sumcoinwallet.org/",
+        "https://www.sumcoin.org/report-a-scam/"
+      ]
+    },
+    {
+      "id": "p2p-safety",
+      "title": "How can I avoid scams in a person-to-person SUM trade?",
+      "tags": [
+        "peer to peer fraud",
+        "escrow",
+        "marketplace scam",
+        "cash buyer",
+        "unrequested dm"
+      ],
+      "text": "Verify counterparties, amounts, addresses and settlement conditions yourself. Treat unsolicited DMs, fake support accounts, upfront unlock payments, and unverified escrow services as warning signs. The bot cannot broker a trade, reverse a confirmed transfer, or guarantee payment.",
+      "sources": [
+        "https://www.sumcoin.org/sumcoin-marketplace/",
+        "https://www.sumcoin.org/report-a-scam/"
+      ]
+    }
   ]
 }

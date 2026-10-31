@@ -4,9 +4,18 @@ import { githubSearch } from './github.js';
 import { t, hasTranslation, normalizeLanguage, LANGUAGE_NAMES } from './languages.js';
 import { containsSecret } from './privacy.js';
 import { offlineAnswer,isContextualFollowup } from './offline.js';
+import { guideReply } from './guides.js';
+import { livePrice,liveTransaction,liveAddress } from './live.js';
 
+export function isCurrentPriceQuestion(q){
+  const text=String(q||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return /(?:sumcoin|\bsum\b)/.test(text) &&
+    /(?:\bcurrent\b|\bright now\b|\btoday\b|\blive\b|\bnow\b|\batual\b|\bagora\b|\bhoje\b|\bactual\b|\bhoy\b)/.test(text) &&
+    /(?:\bprice\b|\brate\b|\bvalue\b|\bvalor\b|\bpreco\b|\bprecio\b|\bcotacao\b|\btaxa\b)/.test(text) &&
+    !/(?:\bhow\b|\bcomo\b).*?(?:\bcalculat|\bformula\b|\bindice\b|\bindex\b)/.test(text);
+}
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
-const HELP=`Sumcoin Helper v0.0.4 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid\n\nQuestions in any language are welcome. The USD index is NOT a bank deposit or guaranteed withdrawal. Never share seed words or keys. Admin commands remain English.`;
+const HELP=`Sumcoin Helper v0.0.5 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price — live SUM/USD index reference\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid\n\nQuestions in any language are welcome. The USD index is NOT a bank deposit or guaranteed withdrawal. Never share seed words or keys. Admin commands remain English.`;
 export function commandFrom(text,botUsername=''){
   const m=/^\/([a-z_]+)(?:@([a-z0-9_]+))?(?:\s+([\s\S]*))?$/i.exec(String(text||'').trim());
   if(!m||(m[2]&&m[2].toLowerCase()!==botUsername.toLowerCase()))return null;
@@ -29,7 +38,7 @@ export function isDirectedMention(text,botUsername){
   const start=new RegExp('^\\s*(?:(?:hey|hi|hello|hola|olá)[!,.\\s]+)?@'+escaped+'\\b','i');
   return start.test(text)||/[?¿؟？]/u.test(text);
 }
-export function createHandler({client,state,config,botUsername,knowledge,learning,ai}){
+export function createHandler({client,state,config,botUsername,knowledge,learning,ai,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress}}){
   const preferences=new Map(),seenReplies=new Map(),topicHistory=new Map();
   const now=()=>Date.now();
   async function send(m,text){return client.sendMessage(m,String(text).slice(0,3500));}
@@ -81,6 +90,7 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     const pref=preferences.get(String(m.from?.id||''));
     if((contextId||expanded)&&prior?.lang&&!(pref?.until>now()))lang=prior.lang;
     if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?config.userCooldownHours:0,automatic?config.topicCooldownSeconds:8))return;
+    if(isCurrentPriceQuestion(q))return send(m,await liveOps.price({lang}));
     const retrievalQuery=ai.apiKey?ai.retrievalQuestion(key,q):q;
     const docs=knowledge.search(contextId?knowledge.find(contextId)?.title||q:retrievalQuery,{limit:12});
     if(contextId){
@@ -113,6 +123,23 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
         if(arg.toLowerCase()==='auto'){preferences.delete(String(m.from?.id||''));return send(m,'Automatic language detection enabled.');}
         const code=arg.toLowerCase();if(!Object.hasOwn(LANGUAGE_NAMES,code))return send(m,'Unsupported language code. Use /language for choices.');
         preferences.set(String(m.from?.id||''),{code,until:now()+24*3600000});return send(m,`Reply language: ${LANGUAGE_NAMES[code]}. Expires in 24 hours; not written to disk.`);
+      }
+      if(name==='guide')return send(m,guideReply(arg.toLowerCase().trim(),lang));
+      if(name==='price'){
+        if(!state.shouldReply(m,`live-price:${m.from?.id||'unknown'}`,0,12))return;
+        return send(m,await liveOps.price({lang}));
+      }
+      if(name==='tx'){
+        if(containsSecret(arg))return send(m,t(lang,'security'));
+        if(!/^[a-f0-9]{64}$/i.test(arg))return send(m,await liveOps.tx(arg,{lang}));
+        if(!state.shouldReply(m,`live-tx:${m.from?.id||'unknown'}`,0,18))return;
+        return send(m,await liveOps.tx(arg,{lang}));
+      }
+      if(name==='address'){
+        if(containsSecret(arg))return send(m,t(lang,'security'));
+        if(!/^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{26,62}$/.test(arg))return send(m,await liveOps.address(arg,{lang}));
+        if(!state.shouldReply(m,`live-address:${m.from?.id||'unknown'}`,0,20))return;
+        return send(m,await liveOps.address(arg,{lang}));
       }
       if(name==='sources')return send(m,'Official references: https://sumcoin.org/ | https://sumcoinwallet.org/ | https://github.com/sumcoinlabs/sumcoin | https://github.com/sumcoinlabs/sumcoin_flutter\n/find searches cached official documents, not arbitrary websites.');
       if(name==='rules')return send(m,'Questions in your own language are welcome. Please keep discussion civil, never share recovery words or private keys, and avoid unsolicited financial offers. Official announcements may remain in English.');

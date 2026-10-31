@@ -50,7 +50,12 @@ export class Knowledge {
       if(d.id==='pending' && /pending|not arrived|sent.*arrive|transaction|txid|unconfirmed/.test(q))score+=6;
       if(d.id==='security' && /scam|hack|fraud|phish/.test(q))score+=6;
       if(d.id==='irreversible'&& /cancel|undo|reverse|wrong address|refund/.test(q))score+=6;
-      if(d.id==='index'&&/why.*price|index|calculated|valuation/.test(q))score+=5;
+      // Preserve the established general index explanation for broad questions.
+      // Specialized additions should win only when the user actually asks about them.
+      if(d.id==='index'&&/why.*price|index|calculat|valor|value|valuation/.test(q))score+=12;
+      if(d.id==='index'&&/(how|como|cómo).*calculat|how does sumcoin.*value|como.*valor|valor.*indice|value.*calculat/.test(q))score+=22;
+      if(d.id==='index-math'&&/market cap formula|circulating supply|index formula|market capitalization.*calculat/.test(q))score+=20;
+      if(d.id==='index-data'&&/data source|where.*data|cryptocompare|feed provider/.test(q))score+=16;
       if(d.id==='buy'&&/where (?:can|do).*buy|exchange list|kiosk|atm|coinbase/.test(q))score+=6;
       if(d.kind==='curated')score*=1.2;
       if(d.kind==='synced')score*=0.72;

@@ -1,6 +1,6 @@
 // Live, bounded GitHub repository path search. Never search arbitrary user-provided repos.
 import {tokens} from './knowledge.js';
-const REPOS=[['sumcoin','main'],['sumcoin_flutter','0.0.9'],['insight-sum-api','master'],['insight-sum-ui','master'],['electrumx','master'],['sumcore','master']];
+const REPOS=[['sumcoin','main'],['sumcoin_flutter','0.0.9'],['insight-sum-api','master'],['insight-sum-ui','master'],['electrumx','master'],['sumcore','master'],['sumcoinlib','master']];
 const cache=new Map(); // per-process public path index; at most six entries
 const CACHE_MS=60*60*1000;
 function scorePath(query,path){const parts=tokens(query),p=path.toLowerCase();let score=0;for(const term of parts)if(p.includes(term))score+=p.split('/').at(-1).includes(term)?4:2;

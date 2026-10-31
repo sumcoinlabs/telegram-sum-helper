@@ -10,7 +10,13 @@ const RELATED = Object.freeze({
   staking:['chain','wallet'],pending:['irreversible','wallet'],
   'missing-balance':['legacy','pending'],fees:['security','wallet'],
   security:['seed','irreversible'],chain:['staking','index'],
-  irreversible:['pending','security'],p2p:['buy','security'],github:['chain']
+  irreversible:['pending','security'],p2p:['buy','security'],github:['chain'],
+  'wallet-connect':['wallet','pending'],'wallet-restore':['seed','legacy'],
+  'wallet-send':['fees','irreversible'],'wallet-receive':['wallet','pending'],
+  'index-math':['index','chain'],'index-data':['index','index-math'],
+  'index-live':['index','index-vs-liquidity'],'tx-explorer':['confirmations','pending'],
+  'address-history':['wallet','security'],'staking-check':['staking','chain'],
+  'migration-recovery':['legacy','seed'],'sumcoinlib':['github','wallet']
 });
 const LABELS = {
   en:{context:'Related context',reading:'Further official reading',more:'For more detail, reply with /more@SumcoinHelperBot',historic:'Some linked material describes older mining software. Current Sumcoin operates on proof-of-stake.',unreviewed:'I found official documents but cannot confirm an accurate short answer from reviewed facts. See these references:',english:'The additional reviewed details below are currently available in English.'},
@@ -20,6 +26,20 @@ const LABELS = {
 
 // Explicit editorial translations: do NOT translate arbitrary scraped material.
 const PT = {
+  'wallet-connect':'Quando a carteira perde conexão com o backend Electrum, o saldo e o histórico mostrados podem estar desatualizados. Confira internet, sincronização e histórico público do endereço. Nunca insira sua frase de recuperação em sites.',
+  'wallet-restore':'Identifique o aplicativo e a versão que criaram a carteira. Sumcoin Wallet atual e Slice Wallet antiga podem derivar endereços diferentes. Recupere apenas em aplicativo legítimo e nunca compartilhe palavras de recuperação.',
+  'wallet-send':'Para enviar SUM, confirme o endereço público de destino, o valor e a eventual taxa na carteira antes de autorizar. Transferências confirmadas geralmente não podem ser revertidas.',
+  'wallet-receive':'Para receber SUM, use o endereço público de recebimento de uma carteira compatível e confirme a rede. Confira o histórico no explorador; nunca forneça a chave privada.',
+  'index-math':'A capitalização de mercado costuma ser preço multiplicado pela oferta circulante. O índice do Sumcoin acompanha as 100 maiores criptomoedas por capitalização. Isso não revela sozinho a fórmula completa de ponderação do índice.',
+  'index-data':'O FAQ do Sumcoin Index descreve o CryptoCompare como fonte de cotações históricas e em tempo real. É necessário verificar a fonte e a atualização; uma cotação não garante compradores.',
+  'index-live':'Use /price para consultar a taxa de referência SUM/USD em uma API aprovada. O resultado só é mostrado quando o formato recebido é reconhecido; não representa preço de venda garantido.',
+  'tx-explorer':'Use /tx seguido de um ID público de transação com 64 caracteres para consultar o explorador aprovado. Verifique confirmações e endereço de destino; nunca compartilhe senhas.',
+  'address-history':'Use /address com um endereço PÚBLICO para consultar o histórico no explorador aprovado. O endereço fica visível a todos no grupo, embora não seja uma chave privada.',
+  'confirmations':'Uma confirmação indica que uma transação entrou em um bloco; confirmações adicionais chegam com novos blocos. Cada serviço pode exigir uma quantidade diferente.',
+  'staking-check':'Se o Core não faz staking, verifique se a versão é compatível, se o nó está sincronizado e se os critérios atuais são atendidos. Não use parâmetros de mineração PoW antigos.',
+  'staking-mobile':'A carteira móvel Sumcoin Wallet não faz minting; o staking depende de uma instalação Core compatível e atualizada.',
+  'migration-recovery':'Slice/SPV antigo e a carteira atual podem usar caminhos de derivação incompatíveis. As mesmas palavras não garantem os mesmos endereços. Consulte o procedimento oficial.',
+  'sumcoinlib':'sumcoinlib é uma biblioteca Dart/Flutter para endereços Sumcoin, chaves hierárquicas e construção/assinatura de transações UTXO. Verifique a compatibilidade na documentação da versão.',
   index:'A referência de valor do SUM é calculada por um índice que acompanha as 100 maiores criptomoedas por capitalização de mercado. Essa fórmula é uma referência de avaliação, não uma ordem de compra ou venda. Não garante liquidez, comprador disponível ou conversão automática em dólares.',
   chain:'Sumcoin é uma criptomoeda de camada 1 voltada a transferências diretas. O projeto começou com prova de trabalho e posteriormente migrou para prova de participação. A moeda SUM não representa um depósito bancário nem uma participação acionária.',
   buy:'Para comprar ou vender SUM, é preciso encontrar uma contraparte disposta e confirmar os termos de uma negociação. O valor exibido no índice não garante que exista comprador nem representa uma oferta executável.',
@@ -35,6 +55,20 @@ const PT = {
   security:'Nunca compartilhe a frase de recuperação, chave privada, senha ou código de verificação, nem com administradores. Ignore mensagens privadas não solicitadas que prometam saques ou recuperação mediante pagamento.'
 };
 const ES = {
+  'wallet-connect':'Si la cartera no puede conectarse al servidor Electrum, el saldo y el historial mostrados pueden quedar desactualizados. Comprueba conexión, sincronización e historial público. Nunca introduzcas tu frase de recuperación en una web.',
+  'wallet-restore':'Identifica la aplicación y versión que crearon la cartera. Sumcoin Wallet actual y Slice antigua pueden derivar direcciones distintas. Restaura solo en software legítimo y no compartas palabras de recuperación.',
+  'wallet-send':'Para enviar SUM, verifica la dirección pública de destino, el importe y las posibles tarifas antes de autorizar. Una transferencia confirmada normalmente no se puede revertir.',
+  'wallet-receive':'Para recibir SUM, utiliza una dirección pública de una cartera compatible y confirma la red. Consulta su historial en el explorador y nunca compartas claves privadas.',
+  'index-math':'La capitalización de mercado suele calcularse como precio multiplicado por oferta circulante. El índice Sumcoin sigue las 100 criptomonedas más grandes por capitalización. Ese dato por sí solo no especifica toda la fórmula de ponderación.',
+  'index-data':'Las preguntas frecuentes del Sumcoin Index citan CryptoCompare como fuente de cotizaciones históricas y actuales. Es necesario verificar la actualidad de los datos; ninguna cotización garantiza compradores.',
+  'index-live':'Usa /price para consultar el valor de referencia SUM/USD desde una API aprobada. Solo se muestra un número si se reconoce el formato de la respuesta; no garantiza un precio de venta.',
+  'tx-explorer':'Usa /tx seguido de un identificador PÚBLICO hexadecimal de 64 caracteres para consultar el explorador. Revisa confirmaciones y destino; no compartas contraseñas.',
+  'address-history':'Usa /address con una dirección PÚBLICA para comprobar el historial en el explorador aprobado. Todos los miembros del grupo podrán verla, aunque no es una clave privada.',
+  'confirmations':'Una confirmación indica que una transacción figura en un bloque; las siguientes llegan con nuevos bloques. Cada servicio puede exigir un número distinto.',
+  'staking-check':'Si Core no hace staking, comprueba versión compatible, sincronización y requisitos actuales. No sigas parámetros de minería PoW antiguos.',
+  'staking-mobile':'La cartera móvil Sumcoin Wallet no realiza minting; el staking depende de una instalación compatible y actualizada de Core.',
+  'migration-recovery':'La antigua Slice/SPV y la cartera actual pueden usar rutas de derivación incompatibles. Las mismas palabras no garantizan las mismas direcciones. Consulta la migración oficial.',
+  'sumcoinlib':'sumcoinlib es una biblioteca Dart/Flutter para direcciones Sumcoin, claves jerárquicas y construcción/firma de transacciones UTXO. Consulta la compatibilidad documentada de cada versión.',
   chain:'Sumcoin es una criptomoneda de capa 1 para transferencias directas. Comenzó con prueba de trabajo y después migró a prueba de participación. SUM no es un depósito bancario ni una participación en una empresa.',
   p2p:'SUM puede transferirse directamente entre carteras compatibles para pagar a quien acepte recibirlo. La disponibilidad de un comercio o anuncio debe confirmarse antes de negociar.',
   'missing-balance':'Que el saldo aparezca a cero no significa necesariamente que las monedas hayan desaparecido. Revisa la cartera correcta, la dirección pública, la conexión y el historial del explorador. La recuperación de antiguas carteras Slice es diferente.',

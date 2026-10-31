@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.5 — 2026-10-31
+
+- Expanded reviewed support knowledge from 16 to **40 topics**, including wallet restore/connection/send/receive, index data and market-cap explanations, transaction confirmation, migration compatibility, staking diagnostics, developer APIs, privacy, and release compatibility.
+- Added eight reviewed, source-linked troubleshooting guides (`/guide`) in English, Spanish and Brazilian Portuguese.
+- Added free, read-only public queries `/price`, `/tx <64-hex-txid>`, `/address <public-address>`. Queries use hardcoded HTTPS hosts, strict input validation, timeouts, redirect rejection and bounded response sizes. Missing or unfamiliar source data is **not** guessed; live API behavior requires verification against production endpoints.
+- Natural-language requests for the **current SUM price** route to the read-only price lookup rather than an undated educational answer; questions about how the index is calculated continue to use curated documentation.
+- New curated Spanish and Portuguese information on wallet, index, explorer, staking and library topics. Never automatically claim scraped content is current or translated.
+- Added `sumcoinlib` (README, changelog, migration, validation) to the fixed approved synchronization set; public GitHub file search includes that repository.
+- The Sumcoin Index FAQ is intentionally **not** ingested because a web-indexed copy contained suspicious executable PHP text; an administrator should inspect the source before adding it.
+- No token changes, new ports, database, root process, auto-reply activation, or paid API use. Added test coverage for API response validation, no invented values, multilingual guides, and old index Q&A regressions.
+
+
 ## 0.0.4 — 2026-10-31
 
 - Richer, structured **free** `/ask` answers combining the reviewed topic explanation, a precise editorial clarification, and related vetted facts; source URLs included. No paid API and no LLM required.

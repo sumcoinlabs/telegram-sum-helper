@@ -14,7 +14,11 @@ const SOURCES = Object.freeze([
   ['https://raw.githubusercontent.com/sumcoinlabs/sumcoin_flutter/0.0.9/README.md','GitHub: Sumcoin mobile wallet'],
   ['https://raw.githubusercontent.com/sumcoinlabs/insight-sum-api/master/README.md','GitHub: explorer API'],
   ['https://raw.githubusercontent.com/sumcoinlabs/insight-sum-ui/master/README.md','GitHub: explorer UI'],
-  ['https://raw.githubusercontent.com/sumcoinlabs/electrumx/master/README.rst','GitHub: ElectrumX server']
+  ['https://raw.githubusercontent.com/sumcoinlabs/electrumx/master/README.rst','GitHub: ElectrumX server'],
+  ['https://raw.githubusercontent.com/sumcoinlabs/sumcoinlib/master/README.md','GitHub: sumcoinlib overview'],
+  ['https://raw.githubusercontent.com/sumcoinlabs/sumcoinlib/master/CHANGELOG.md','GitHub: sumcoinlib changes'],
+  ['https://raw.githubusercontent.com/sumcoinlabs/sumcoinlib/master/MIGRATION.md','GitHub: sumcoinlib migration'],
+  ['https://raw.githubusercontent.com/sumcoinlabs/sumcoinlib/master/VALIDATION.md','GitHub: sumcoinlib validation']
 ]);
 const entity=t=>t.replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/&quot;/gi,'"').replace(/&#39;/gi,"'");
 export function toText(input,isHtml){
