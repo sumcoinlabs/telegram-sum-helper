@@ -10,9 +10,13 @@ export function isOfficialSource(source){
   if(typeof source!=='string'||source.length>300)return false;
   try{
     const u=new URL(source);
-    if(u.protocol!=='https:'||u.username||u.password||u.port||u.search||u.hash)return false;
+    if(u.protocol!=='https:'||u.username||u.password||u.port||u.hash)return false;
+    // Accept only the two documented SumcoinPrice historical query URLs.
+    // Never allow arbitrary query strings to become reviewed evidence.
+    if(u.search)return ['https://sumcoinprice.com/api/history.php?range=1d',
+      'https://sumcoinprice.com/api/history.php?range=1d&pair=btc'].includes(u.href);
     if(u.hostname==='github.com')return /^\/sumcoinlabs\/[a-z0-9_.-]+(?:\/|$)/i.test(u.pathname);
-    return ['sumcoin.org','www.sumcoin.org','sumcoinwallet.org','www.sumcoinwallet.org','sumcoinindex.com','www.sumcoinindex.com','docs.sumcoin.org'].includes(u.hostname);
+    return ['sumcoin.org','www.sumcoin.org','sumcoinwallet.org','www.sumcoinwallet.org','sumcoinindex.com','www.sumcoinindex.com','sumcoinprice.com','www.sumcoinprice.com','docs.sumcoin.org'].includes(u.hostname);
   }catch{return false;}
 }
 

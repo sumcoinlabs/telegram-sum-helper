@@ -1,3 +1,10 @@
+## v0.0.19 — SumcoinPrice API and chart discovery (2026-10-31)
+
+- Add `/chart` and `/priceapi` with fixed, documented SumcoinPrice links: interactive charts, current USD snapshot (`/market.php`), SUM/USD 1-day history and SUM/BTC 1-day history (`/api/history.php`).
+- Auto-detect clear chart/history/ATH/price API questions (including multilingual examples) from ordinary group members and explicit admin questions; keep live exchange-rate questions on `rate.slicewallet.org` and protect existing Groq quotas.
+- Add SumcoinPrice to `/sources`, Telegram slash-command menu, link allowlists and release documentation. Never invent historical values or claim that an indexed price guarantees a cash buyer. **The bot links public historical APIs; it does not yet parse or quote their numerical time series.**
+- Preserve private VM Groq API key, auto-AI, historical learning, user preferences, moderator queue and other v0.0.18 behavior. No credentials or server data packaged.
+
 ## v0.0.18 — Natural price questions and admin-safe live quotes (2026-10-31)
 
 - Recognizes “What’s Sumcoins price right now”, “What's Sumcoin price right now”, “Whats SUM price right now” and similar natural questions without a trailing question mark or an explicit currency. Uses the existing preferred-currency selection, not AI-generated amounts.

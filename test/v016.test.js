@@ -91,9 +91,9 @@ with tempfile.TemporaryDirectory(prefix='groqcheck-') as tmp:
 });
 
 test('v016 release contains private key diagnostic and exact verified publisher base',()=>{
-  assert.equal(VERSION,'0.0.18');
+  assert.equal(VERSION,'0.0.19');
   const script=fs.readFileSync(new URL('../scripts/push-update.sh',import.meta.url),'utf8');
-  assert.match(script,/bc66b905da56604e1bcf1642bcd5dc8c10e60d9a/);
+  assert.match(script,/84f6fbca2d112bf30e7dd5134e8a06a4a77d344e/);
   assert.match(script,/v0\.0\.18/);
   assert.doesNotMatch(script,/--force/);
   const setup=fs.readFileSync(new URL('../scripts/setup-groq.py',import.meta.url),'utf8');

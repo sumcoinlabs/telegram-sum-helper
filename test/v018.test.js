@@ -13,7 +13,7 @@ import { createHandler } from '../src/bot.js';
 import { VERSION } from '../src/version.js';
 
 test('v018 exact screenshot: plural and punctuation-free live price questions',()=>{
- assert.equal(VERSION,'0.0.18');
+ assert.equal(VERSION,'0.0.19');
  for(const q of [
    'What’s Sumcoins price right now',
    "What's Sumcoins price right now",
@@ -67,5 +67,5 @@ test('v018 ordinary members and admins get explicit prices; admin chatter remain
 
 test('v018 Groq installer identifies itself instead of the rejected Python urllib user agent',()=>{
  const script=fs.readFileSync(new URL('../scripts/setup-groq.py',import.meta.url),'utf8');
- assert.match(script,/User-Agent.*SumcoinHelper\/0\.0\.18/);
+ assert.match(script,/User-Agent.*SumcoinHelper\/0\.0\.19/);
 });

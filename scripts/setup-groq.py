@@ -43,7 +43,7 @@ def error_detail(exc, secret):
 
 def call(path, secret, data=None):
     headers = {'Authorization': 'Bearer ' + secret, 'Accept': 'application/json',
-               'User-Agent': 'SumcoinHelper/0.0.18'}
+               'User-Agent': 'SumcoinHelper/0.0.19'}
     if data is not None:
         headers['Content-Type'] = 'application/json'
     req = urllib.request.Request(API + path, data=json.dumps(data).encode() if data is not None else None,

@@ -137,7 +137,7 @@ export class Knowledge {
 export function citationUrls(docs,max=3){
   const found=[];
   for(const d of docs){for(const url of (d.sources||[d.source])){
-    if(url && (/^https:\/\/(?:www\.)?(?:sumcoin\.org|sumcoinwallet\.org|sumcoinindex\.com|github\.com|raw\.githubusercontent\.com|docs\.sumcoin\.org|t\.me)(?:\/|$)/i.test(url) || url==='https://www.youtube.com/watch?v=_dq55ykFDHs' || /^https:\/\/x\.com\/[a-z0-9_]{1,15}\/status\/\d{8,22}$/i.test(url)) && !found.includes(url))found.push(url);
+    if(url && (/^https:\/\/(?:www\.)?(?:sumcoin\.org|sumcoinwallet\.org|sumcoinindex\.com|sumcoinprice\.com|github\.com|raw\.githubusercontent\.com|docs\.sumcoin\.org|t\.me)(?:\/|$)/i.test(url) || url==='https://www.youtube.com/watch?v=_dq55ykFDHs' || /^https:\/\/x\.com\/[a-z0-9_]{1,15}\/status\/\d{8,22}$/i.test(url)) && !found.includes(url))found.push(url);
     if(found.length>=max)return found;
   }}return found;
 }

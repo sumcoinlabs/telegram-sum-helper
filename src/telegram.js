@@ -114,6 +114,8 @@ export class TelegramClient {
       { command: 'more', description: 'More detail about your last question' },
       { command: 'guide', description: 'Step-by-step wallet troubleshooting' },
       { command: 'price', description: 'Live peer-to-peer rate in your currency' },
+      { command: 'chart', description: 'SumcoinPrice charts and historical rates' },
+      { command: 'priceapi', description: 'Public SUM market and historical data APIs' },
       { command: 'currency', description: 'Set your preferred rate currency' },
       { command: 'tx', description: 'Look up a public transaction ID' },
       { command: 'address', description: 'Look up a public SUM address' },

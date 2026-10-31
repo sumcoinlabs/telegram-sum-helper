@@ -119,3 +119,12 @@ Group admins may ask clear natural price questions; other admin posts and anonym
 `/engine`, when used by a group admin as a reply to a bot message, identifies live, local, or Groq origin while the in-memory provenance is available.
 `AUTO_AI=true` is required for automatic *explanatory* Groq answers; no key changes needed when upgrading from v0.0.17.
 The private Groq installer specifies `User-Agent: SumcoinHelper/0.0.18` to avoid Python-urllib Cloudflare 403 responses.
+
+## v0.0.19 SumcoinPrice integration
+
+- `/chart` points to https://sumcoinprice.com/ (public interactive SUM historical chart).
+- `/priceapi` lists the documented public JSON endpoints: `https://sumcoinprice.com/market.php`, `https://sumcoinprice.com/api/history.php?range=1d` and `https://sumcoinprice.com/api/history.php?range=1d&pair=btc`.
+- `/sources` includes the site. Natural chart/history/API questions route to these fixed URLs with no Groq call; `rate.slicewallet.org/api/rates` remains primary for live multicurrency quotes.
+- The bot does not parse or assert historical datapoints or all-time-high numbers, because live history-feed response schemas/freshness have not been verified in this release. Do not silently synthesize or guess historical values.
+- To check live endpoint health after deployment, run `curl -fLsS -o /dev/null -w '%{http_code}\n' 'https://sumcoinprice.com/market.php'` and the history URL; no endpoint availability is assumed at build time.
+- No changes to `.env`, `data/`, model quotas, or services are necessary beyond the normal `git pull` and user-service restart.

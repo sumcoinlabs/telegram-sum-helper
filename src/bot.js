@@ -12,6 +12,7 @@ import {supportUI} from './support-ui.js';
 import {priceIntent,ambiguousPesoPrice,pesoClarificationCurrency,consensusIntent,consensusReply,isPoSConfirmation,consensusAnswerKind} from './intent.js';
 import {VERSION} from './version.js';
 import {needsConversationalAnswer} from './auto-ai.js';
+import {marketDiscoveryIntent, marketDiscoveryReply, SUMCOINPRICE} from './market-discovery.js';
 import fs from 'node:fs';
 
 
@@ -39,7 +40,7 @@ export function isCurrentPriceQuestion(q){
   return when.test(text)&&price.test(text)&&!calculation.test(text);
 }
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
-const HELP=`Sumcoin Helper v${VERSION} — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
+const HELP=`Sumcoin Helper v${VERSION} — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate\n/chart — SumcoinPrice interactive charts and history\n/priceapi — public market snapshot and historical data API
 /currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/engine (admin, reply to bot answer) — show which engine answered\n/feedback — report an inaccurate answer (aggregated)\n/stop — pause automatic help for 24 hours; /resume — turn it on again\n\nGroup admins: /mode observe|reply, /stats, /weekly, /feedbacks, /learn, /correct (reply), /revoke ID, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid, /queue\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
 export function commandFrom(text,botUsername=''){
   const m=/^\/([a-z_]+)(?:@([a-z0-9_]+))?(?:\s+([\s\S]*))?$/i.exec(String(text||'').trim());
@@ -252,6 +253,8 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?0.0015:0,automatic?0:0))return;
     if(await finishPesos(m,q))return;
     if(await askPesos(m,q,lang))return;
+    const market=marketDiscoveryIntent(q);
+    if(market)return sendTopic(m,marketDiscoveryReply(market,lang),null,lang,'local');
     const pricing=priceIntent(q);
     if(pricing)return sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang,'live');
     if(consensusIntent(q))return sendTopic(m,consensusReply(lang,q),'chain',lang,'local');
@@ -353,6 +356,8 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
 /more
 /guide zero|restore|pending|staking|connect|migration|fees|trade
 /price [USD|EUR|BRL|...]
+/chart — SumcoinPrice market chart and price history
+/priceapi — market snapshot and historical JSON API
 /currency CODE|auto
 /language CODE|auto
 /tx TXID
@@ -382,6 +387,7 @@ ${ui(lang,'safety')}`);
         return send(m,`${ui(lang,'selected')}: ${code}\n${ui(lang,'usage')}`);
       }
       if(name==='guide')return send(m,guideReply(arg.toLowerCase().trim(),lang));
+      if(name==='chart'||name==='priceapi')return sendTopic(m,marketDiscoveryReply(name==='chart'?'chart':'api',lang),null,lang,'local');
       if(name==='price'){
         const override=arg.trim().toUpperCase();
         if(override&&!/^[A-Z]{3}$/.test(override))return send(m,ui(lang,'unsupported'));
@@ -417,7 +423,7 @@ ${ui(lang,'safety')}`);
         return send(m,docs.length?docs.map(d=>`${d.title}${d.stale?' (cached; source unavailable at last refresh)':''}\n${d.source}`).join('\n\n'):'No news metadata synced yet.');
       }
       if(name==='queue'&&group&&await admin(m))return send(m,escalations?.stats()||'Review queue not configured.');
-      if(name==='sources')return send(m,'Official references: https://sumcoin.org/ | https://sumcoinwallet.org/ | https://github.com/sumcoinlabs/sumcoin | https://github.com/sumcoinlabs/sumcoin_flutter\n/find searches cached official documents, not arbitrary websites.');
+      if(name==='sources')return send(m,`Official references: https://sumcoin.org/ | https://sumcoinwallet.org/ | https://github.com/sumcoinlabs/sumcoin | https://github.com/sumcoinlabs/sumcoin_flutter\nMarket charts and historical data: ${SUMCOINPRICE.website}\nMarket data APIs: /priceapi\n/find searches cached official documents, not arbitrary websites.`);
       if(name==='rules')return send(m,'Questions in your own language are welcome. Please keep discussion civil, never share recovery words or private keys, and avoid unsolicited financial offers. Official announcements may remain in English.');
       if(COMMAND_TOPICS[name])return send(m,article(COMMAND_TOPICS[name],lang));
       if(name==='github'){
@@ -552,8 +558,9 @@ Private runtime data is not published to GitHub.`);
       return ask(m,m.text,{expanded:true});
     }
 
+    const marketRequest=marketDiscoveryIntent(m.text);
     const standaloneConsensus=/^(?:is|does|did|was|can|will|what|how)\b/i.test(m.text.trim())&&consensusIntent(m.text);
-    if(!isSupportMessage(m.text)&&!priceIntent(m.text)&&!ambiguousPesoPrice(m.text)&&!standaloneConsensus&&!(needsConversationalAnswer(m.text)&&/(?:\bsumcoins?\b|\bsum\b|\bslice\b)/i.test(m.text)))return;
+    if(!marketRequest&&!isSupportMessage(m.text)&&!priceIntent(m.text)&&!ambiguousPesoPrice(m.text)&&!standaloneConsensus&&!(needsConversationalAnswer(m.text)&&/(?:\bsumcoins?\b|\bsum\b|\bslice\b)/i.test(m.text)))return;
     // Do not interrupt rhetorical, promotional, or off-topic Sumcoin chat.
     if(/^(?:do you (?:like|love)|who else (?:likes|loves)|isn't it (?:great|awesome)|sumcoin (?:to the moon|is awesome)|hey guys|good morning)\b/i.test(m.text.trim()))return;
     // Group announcements by admins stay quiet. A clearly phrased live-price
@@ -561,13 +568,20 @@ Private runtime data is not published to GitHub.`);
     // automatically respond to admin statements, routine posts or anonymous admins.
     const adminPriceQuestion=Boolean((priceIntent(m.text)||ambiguousPesoPrice(m.text)) &&
       (/[?¿？]/u.test(m.text)||/^(?:what(?:['’]?s| is)|whats|how much|show(?: me)?|tell me|give me|could you|can you)\b/iu.test(m.text.trim())));
-    if(m.sender_chat||isMuted(m)||(await admin(m)&&!adminPriceQuestion))return;
+    // Chart/API discovery is safe for an admin who explicitly asks, but never
+    // respond to bare announcements containing a market-data link.
+    const adminMarketQuestion=Boolean(marketRequest);
+    if(m.sender_chat||isMuted(m)||(await admin(m)&&!adminPriceQuestion&&!adminMarketQuestion))return;
     const {topic,language}=classify(m.text,m.from?.language_code);
     if(config.learningEnabled!==false)learning.observe(m.text,topic,language);
     if(topic)state.record(topic,false);
     state.recordLanguage(language);
     if(state.data.mode!=='reply')return;
     if(await askPesos(m,m.text,language))return;
+    if(marketRequest){
+      if(!state.shouldReply(m,`auto:market-discovery:${marketRequest}:${m.from?.id}`,0.00056,0))return;
+      return sendTopic(m,marketDiscoveryReply(marketRequest,languageFor(m,m.text)),null,languageFor(m,m.text),'local');
+    }
     const pricing=priceIntent(m.text);
     if(pricing){
       if(state.shouldReply(m,`auto:live-price:${pricing.currency||'auto'}:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang,'live');}
