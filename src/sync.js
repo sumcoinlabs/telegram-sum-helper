@@ -7,7 +7,7 @@ const SOURCES = Object.freeze([
   ['https://www.sumcoin.org/migrations/','Official: legacy wallet migration (terms can change)'],
   ['https://www.sumcoin.org/sumcoin-marketplace/','Official: peer-to-peer trade'],
   ['https://sumcoinwallet.org/','Official: Electrum wallet and recovery'],
-  ['https://sumcoinindex.com/white-paper.html','Official: project white paper (claims are project statements)'],
+  ['https://www.sumcoinindex.com/white-paper.html','Official: project white paper (claims are project statements)'],
   ['https://raw.githubusercontent.com/sumcoinlabs/sumcoin/main/README.md','GitHub: Sumcoin Core overview'],
   ['https://raw.githubusercontent.com/sumcoinlabs/sumcoin/main/doc/README.md','GitHub: Sumcoin Core docs index'],
   ['https://raw.githubusercontent.com/sumcoinlabs/sumcoin/main/doc/JSON-RPC-interface.md','GitHub: Sumcoin Core RPC interface'],
