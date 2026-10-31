@@ -3,7 +3,7 @@ import { citationUrls } from './knowledge.js';
 import { githubSearch } from './github.js';
 import { t, hasTranslation, normalizeLanguage, LANGUAGE_NAMES } from './languages.js';
 import { containsSecret } from './privacy.js';
-import { offlineAnswer,isContextualFollowup,reviewedFact } from './offline.js';
+import { offlineAnswer,isContextualFollowup,isMoreRequest,reviewedFact } from './offline.js';
 import { guideReply } from './guides.js';
 import { livePrice,liveTransaction,liveAddress } from './live.js';
 import {ui,preferredCurrency} from './locale-ui.js';
@@ -20,7 +20,7 @@ export function isCurrentPriceQuestion(q){
   return when.test(text)&&price.test(text)&&!calculation.test(text);
 }
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
-const HELP=`Sumcoin Helper v0.0.10 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
+const HELP=`Sumcoin Helper v0.0.11 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
 /currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n/stop — pause automatic help for 24 hours; /resume — turn it on again\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid, /queue\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
 export function commandFrom(text,botUsername=''){
   const m=/^\/([a-z_]+)(?:@([a-z0-9_]+))?(?:\s+([\s\S]*))?$/i.exec(String(text||'').trim());
@@ -45,12 +45,12 @@ export function isDirectedMention(text,botUsername){
   return start.test(text)||/[?¿؟？]/u.test(text);
 }
 export function createHandler({client,state,config,botUsername,knowledge,learning,ai,escalations=null,groupIndex=null,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress}}){
-  const preferences=new Map(),currencyPreferences=new Map(),seenReplies=new Map(),topicHistory=new Map(),mutedMembers=new Map(),adminCache=new Map();
+  const preferences=new Map(),currencyPreferences=new Map(),seenReplies=new Map(),topicHistory=new Map(),answeredMessages=new Map(),mutedMembers=new Map(),adminCache=new Map();
   const now=()=>Date.now();
   async function send(m,text){return client.sendMessage(m,String(text).slice(0,3500));}
-  async function admin(m){if(!m.from?.id||!inAllowedGroup(m.chat,config))return false;
+  async function admin(m,fresh=false){if(!m.from?.id||!inAllowedGroup(m.chat,config))return false;
     const key=`${m.chat.id}:${m.from.id}`,cached=adminCache.get(key);
-    if(cached&&cached.until>now())return cached.value;
+    if(!fresh&&cached&&cached.until>now())return cached.value;
     try{
       const isAdmin=['administrator','creator'].includes((await client.getChatMember(m.chat.id,m.from.id))?.status);
       adminCache.set(key,{value:isAdmin,until:now()+10_000});return isAdmin;
@@ -133,58 +133,89 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
   function rememberTopic(m,id,lang){
     if(!id)return;
     const key=`${m.chat.id}:${m.from?.id||m.sender_chat?.id||0}`;
-    topicHistory.set(key,{id,lang,until:now()+30*60_000});
+    topicHistory.set(key,{id,lang,until:now()+30*60_000,autoUntil:now()+5*60_000});
     if(topicHistory.size>500){
       for(const [k,v] of topicHistory)if(v.until<=now())topicHistory.delete(k);
       while(topicHistory.size>500)topicHistory.delete(topicHistory.keys().next().value);
     }
   }
+  // Track topics only after Telegram confirms delivery. Public bot replies are
+  // scoped by chat+message ID, so someone replying to a different bot answer
+  // gets the correct context without sharing anyone's private conversation.
+  async function sendTopic(m,text,id,lang){
+    const result=await send(m,text);
+    if(id&&knowledge.find(id)){
+      rememberTopic(m,id,lang);
+      if(Number.isSafeInteger(result?.message_id)){
+        const key=`${m.chat.id}:${result.message_id}`;
+        answeredMessages.set(key,{id,lang,until:now()+30*60_000});
+        if(answeredMessages.size>500){
+          for(const [k,v] of answeredMessages)if(v.until<=now())answeredMessages.delete(k);
+          while(answeredMessages.size>500)answeredMessages.delete(answeredMessages.keys().next().value);
+        }
+      }
+    }
+    return result;
+  }
+  function repliedTopic(m){
+    const id=m.reply_to_message?.message_id;
+    if(!Number.isSafeInteger(id))return null;
+    const key=`${m.chat.id}:${id}`,entry=answeredMessages.get(key);
+    if(!entry||entry.until<=now()){answeredMessages.delete(key);return null;}
+    return entry;
+  }
   function offline(docs,lang,expanded=false){
     return offlineAnswer({docs,knowledge,lang,expanded});
   }
   const CHAT_LIMIT=Math.max(1,Number(config.aiDailyLimit)||100);
-  async function ask(m,q,{automatic=false,expanded=false}={}){
+  async function ask(m,q,{automatic=false,expanded=false,contextTopic=null,contextLanguage=null}={}){
     let lang=languageFor(m,q);
     if(!q||q.length>1000)return automatic?undefined:send(m,t(lang,'need'));
     if(containsSecret(q))return automatic?undefined:send(m,t(lang,'security'));
     if(automatic&&state.data.mode!=='reply')return;
     const key=`${m.chat.id}:${m.from?.id||m.sender_chat?.id||0}`;
     const prior=recentTopic(m);
+    const chosenPrior=contextTopic&&knowledge.find(contextTopic)?{id:contextTopic,lang:contextLanguage||lang}:prior;
     // A generic follow-up about 'that' uses the previous verified topic.
     // A new explicit topic (e.g. fees) takes priority over context.
-    const detected=classify(q).topic;
-    const contextId=!detected&&prior&&isContextualFollowup(q)?prior.id:null;
+    const detected=classify(q).topic||(/\b(?:transaction|network)\s+fees?\b|^fees?\?*$/i.test(q)?'fees':null);
+    const contextId=!detected&&chosenPrior&&isContextualFollowup(q)?chosenPrior.id:null;
     const pref=preferences.get(String(m.from?.id||''));
-    if((contextId||expanded)&&prior?.lang&&!(pref?.until>now()))lang=prior.lang;
+    if((contextId||expanded)&&chosenPrior?.lang&&!(pref?.until>now()))lang=chosenPrior.lang;
     if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?config.userCooldownHours:0,automatic?config.topicCooldownSeconds:0))return;
     const pricing=priceIntent(q);
-    if(pricing)return send(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}));
-    if(consensusIntent(q))return send(m,consensusReply(lang));
+    if(pricing)return sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang);
+    if(consensusIntent(q))return sendTopic(m,consensusReply(lang),'chain',lang);
     const retrievalQuery=ai.apiKey?ai.retrievalQuestion(key,q):q;
     const docs=knowledge.search(contextId?knowledge.find(contextId)?.title||q:retrievalQuery,{limit:12});
     if(escalations&&!automatic&&inAllowedGroup(m.chat,config)&&!await admin(m)&&
-       (needsHumanReview(q)||!docs.some(d=>(d.kind==='curated'||d.kind==='admin-approved')&&d.score>=12&&d.coverage>=0.25))){
+       (needsHumanReview(q)||(!contextId&&!docs.some(d=>(d.kind==='curated'||d.kind==='admin-approved')&&d.score>=12&&d.coverage>=0.25)))){
       const item=escalations.enqueue(m,q,lang);
       if(item){await notifyUnanswered(item);return send(m,supportUI(lang,'queued'));}
+    }
+    // A directly classified fee question must not be answered with a generic
+    // transaction-pending FAQ just because it shares the word 'transaction'.
+    if(!contextId&&detected==='fees'){
+      const exact=knowledge.find('fees');
+      if(exact){const i=docs.findIndex(d=>d.id==='fees');if(i>=0)docs.splice(i,1);docs.unshift(exact);}
     }
     if(contextId){
       const related=knowledge.find(contextId);
       if(related){const i=docs.findIndex(d=>d.id===contextId);if(i>=0)docs.splice(i,1);docs.unshift(related);}
     }
     const primary=docs.find(d=>d.kind==='curated'||d.kind==='admin-approved');
-    if(primary)rememberTopic(m,primary.id,lang);
     if(!docs.length)return automatic?undefined:send(m,t(lang,'none'));
-    if(!ai.apiKey)return send(m,offline(docs,lang,expanded));
-    if(!state.consumeAiQuota(CHAT_LIMIT))return send(m,offline(docs,lang,expanded)+'\n\n(AI daily limit reached.)');
+    if(!ai.apiKey)return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang);
+    if(!state.consumeAiQuota(CHAT_LIMIT))return sendTopic(m,offline(docs,lang,expanded)+'\n\n(AI daily limit reached.)',contextId||primary?.id,lang);
     try{
       // Never send unreviewed podcast, news, social or scraped GitHub text
       // into the generative model as authority or executable instructions.
       const reviewedContext=docs.filter(d=>d.kind==='curated'||d.kind==='admin-approved');
-      if(!reviewedContext.length)return send(m,offline(docs,lang,expanded));
+      if(!reviewedContext.length)return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang);
       const answer=await ai.answer({question:q,context:reviewedContext,historyKey:key,language:lang});
-      await send(m,answer.text);state.record('answered-ai',true);
+      await sendTopic(m,answer.text,contextId||primary?.id,lang);state.record('answered-ai',true);
     }catch(err){console.error('AI unavailable:',err.message);
-      return send(m,`${t(lang,'temporarily')}\n\n${article(docs[0].id,lang)}`);}
+      return sendTopic(m,`${t(lang,'temporarily')}\n\n${article(docs[0].id,lang)}`,contextId||primary?.id,lang);}
   }
   const handle=async function handle(m){
     if(!m?.chat||!m.text||m.from?.is_bot)return;
@@ -386,8 +417,22 @@ ${ui(lang,'safety')}`);
     // Explicit bot follow-ups must work even if the user's question is "What about fees?"
     const mention=isDirectedMention(m.text,botUsername);
     const repliedToBot=m.reply_to_message?.from?.username?.toLowerCase()===botUsername.toLowerCase() && m.reply_to_message?.from?.is_bot===true;
-    if(mention||repliedToBot){return ask(m,m.text.replace(new RegExp('@'+botUsername,'ig'),'').trim());}
+    const q=m.text.replace(new RegExp('@'+botUsername,'ig'),'').trim();
+    if(mention||repliedToBot){
+      const topic=repliedToBot&&isContextualFollowup(q)?repliedTopic(m):null;
+      const myPrior=recentTopic(m);
+      const topicLanguage=topic&&myPrior?.id===topic.id?myPrior.lang:languageFor(m,q);
+      return ask(m,q,{expanded:Boolean(topic&&isMoreRequest(q)),contextTopic:topic?.id,contextLanguage:topicLanguage});
+    }
     if(containsSecret(m.text))return;
+
+    // Follow a recent answer to THIS member only. A bare "tell me more"
+    // without a recent answer remains ordinary chatter and is ignored.
+    const prior=recentTopic(m);
+    if(isMoreRequest(m.text)&&prior?.autoUntil>now()){
+      if(m.sender_chat||await admin(m,true)||isMuted(m)||state.data.mode!=='reply')return;
+      return ask(m,m.text,{expanded:true});
+    }
 
     const standaloneConsensus=/^(?:is|does|did|was|can|will|what|how)\b/i.test(m.text.trim())&&consensusIntent(m.text);
     if(!isSupportMessage(m.text)&&!priceIntent(m.text)&&!standaloneConsensus)return;
@@ -402,11 +447,11 @@ ${ui(lang,'safety')}`);
     if(state.data.mode!=='reply')return;
     const pricing=priceIntent(m.text);
     if(pricing){
-      if(state.shouldReply(m,`auto:live-price:${pricing.currency||'auto'}:${m.from?.id}`,0.00056,0))await send(m,await liveOps.price({...priceOptions(m,languageFor(m,m.text),pricing.currency||''),amount:pricing.amount}));
+      if(state.shouldReply(m,`auto:live-price:${pricing.currency||'auto'}:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang);}
       return;
     }
     if(consensusIntent(m.text)){
-      if(state.shouldReply(m,`auto:consensus:${m.from?.id}`,0.00056,0))await send(m,consensusReply(languageFor(m,m.text)));
+      if(state.shouldReply(m,`auto:consensus:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,consensusReply(lang),'chain',lang);}
       return;
     }
     const detected=topic||learning.learnedTopic(m.text);
@@ -416,7 +461,8 @@ ${ui(lang,'safety')}`);
     if(recognized&&!needsHumanReview(m.text)){
       // Short per-user / per-group cooldown rather than blocking support for six hours.
       if(!state.shouldReply(m,`auto:${recognized}:${m.from?.id}`,0.0015,0))return;
-      await send(m,article(recognized,languageFor(m,m.text)));
+      const lang=languageFor(m,m.text);
+      await sendTopic(m,article(recognized,lang),recognized,lang);
       state.record(recognized,true);return;
     }
     if(!escalations)return;

@@ -154,5 +154,32 @@ export function offlineAnswer({docs,knowledge,lang='en',expanded=false}){
 export function isContextualFollowup(text){
   const q=String(text||'').trim();
   if(q.length<3||q.length>160)return false;
-  return /\b(?:that|this|it|those|earlier|previous|more details?|elaborate|explain more|explain that|eso|esa|esto|aquello|mais detalhes?|isso|aquilo|explique mais|más detalles?|explícame|explicame)\b/i.test(q)||/^(?:why\??|how\??|por que\??|por qué\??|por quê\??|why is that\??)$/i.test(q);
+  return isMoreRequest(q)||/\b(?:that|this|it|those|earlier|previous|more details?|elaborate|explain more|explain that|eso|esa|esto|aquello|mais detalhes?|isso|aquilo|explique mais|más detalles?|explícame|explicame)\b/i.test(q)||/^(?:why\??|how\??|por que\??|por qué\??|por quê\??|why is that\??)$/i.test(q);
+}
+
+// A deliberately narrow set of short, context-dependent requests. Do not
+// interpret arbitrary "more" chatter or unrelated questions as bot follow-ups.
+// Keep this separate from isContextualFollowup: automatic replies require a
+// stronger signal than explicit /ask or a direct reply to the bot.
+export function isMoreRequest(text){
+  const q=String(text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f\u064B-\u065F]/g,'').normalize('NFC')
+    .replace(/^[\s¿?¡!]+|[\s?!؟。！.,،]+$/gu,'').trim();
+  if(q.length<4||q.length>100)return false;
+  return [
+    /^(?:(?:can|could|would) you |please )?(?:tell me more|explain (?:that|it|more|further)|elaborate(?: on (?:that|it))?|expand on (?:that|it)|give me more (?:details|information|info))$/u,
+    /^(?:more (?:details?|information|info)|what else|tell me more about (?:that|it)|can you expand on that)$/u,
+    /^(?:cuentame mas|dime mas|explica(?:me)? mas|puedes explicar mas|mas (?:detalles|informacion)|explicame mejor)$/u,
+    /^(?:conte mais|me conte mais|pode explicar melhor|explique mais|mais (?:detalhes|informacoes)|fale mais)$/u,
+    /^(?:dis.m.en plus|explique davantage|plus de (?:details|precisions)|peux.tu expliquer davantage)$/u,
+    /^(?:erzahl mir mehr|kannst du mehr erklaren|mehr details|erklar das genauer)$/u,
+    /^(?:dimmi di piu|puoi spiegare meglio|spiega meglio|maggiori dettagli)$/u,
+    /^(?:расскажи подробнее|объясни подробнее|можно подробнее|подробнее)$/u,
+    /^(?:اشرح اكثر|هل يمكنك التوضيح اكثر|مزيد من التفاصيل|اخبرني المزيد)$/u,
+    /^(?:और बताओ|और विस्तार से बताओ|थोड़ा और समझाओ)$/u,
+    /^(?:能说详细一点吗|请多解释一下|详细说说|再多说一点|多讲一点)$/u,
+    /^(?:もっと詳しく(?:教えて|説明して)?|もう少し説明して|詳しく教えて)$/u,
+    /^(?:좀 더 자세히(?: 설명해줘| 알려줘)?|더 설명해줘|자세히 알려줘)$/u,
+    /^(?:daha fazla anlat|biraz daha acikla|daha ayrintili anlat)$/u,
+    /^(?:jelaskan lebih lanjut|ceritakan lebih banyak|bisa jelaskan lebih detail)$/u
+  ].some(pattern=>pattern.test(q));
 }

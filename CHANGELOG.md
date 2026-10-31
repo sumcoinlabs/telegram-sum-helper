@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.11 — 2026-10-31
+
+- Fix natural follow-ups after **automatic** bot answers: remember curated topic identifiers upon successful delivery, support short multilingual “tell me more” requests for the same member for five minutes, and let a direct reply to a bot message follow that specific answer for up to 30 minutes. Keep context in memory only; do not retain member message text or share private context between members.
+- Preserve admin exclusion (fresh role verification on automatic follow-ups), group authorization, opted-out members, observation mode, and normal conversation silence. Maintain `/more`, `/ask`, explicit mentions, currency and consensus handling.
+- Prefer the dedicated reviewed fees topic for clear transaction-fee questions explicitly addressed to the bot.
+- Replace the 36K-character historical README with a short project overview, the **exact official Sumcoin logo URL**, CI/version/Node/locales/license badges, and a separate [operations manual](docs/OPERATIONS.md). History remains in this changelog.
+- Add end-to-end regressions reproducing the Telegram screenshot and testing context isolation, bot-message replies, multiple languages, price explanations and unchanged commands. All existing tests retained.
+
+
 ## 0.0.10 — 2026-10-31
 
 - Private bounded indexing of relevant *new* group messages, with 90-day/5000-excerpt limits, secret/PII filters, no Telegram member account identifiers, and `/privacy` and `/forget`.
