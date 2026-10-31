@@ -1,6 +1,7 @@
 // News discovery is an attributable headline/description index; never copies full articles.
 // Articles may include opinions, allegations, paid press releases and historic PoW terms.
 import fs from 'node:fs';import path from 'node:path';
+import {VERSION} from './version.js';
 export const NEWS_SOURCES=[
  {url:'https://www.sumcoinindex.com/news/sumcoin-at-5-and-whats-next.php',label:'Sumcoin Index: project retrospective (2023)'},
  {url:'https://www.accessnewswire.com/newsroom/en/blockchain-and-cryptocurrency/bmcs-launches-the-first-crypto-investment-fund-for-sumcoin-687976',label:'ACCESSWIRE: BMCS press release (2022)'},
@@ -9,10 +10,12 @@ export const NEWS_SOURCES=[
 function unescape(s){return String(s||'').replace(/&quot;|&#34;/gi,'"').replace(/&amp;/gi,'&').replace(/&#39;|&apos;/gi,"'").replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');}
 function meta(html,name){const tags=html.match(/<meta\b[^>]*>/gi)||[];for(const tag of tags){const key=(tag.match(/(?:name|property)=["']([^"']+)["']/i)||[])[1];if(key!==name)continue;return unescape((tag.match(/content=["']([^"']*)["']/i)||[])[1]||'');}return '';}
 export async function syncNews({fetchImpl=fetch,out='./data/news.json',onProgress=()=>{}}={}){
- const docs=[],failures=[];
+ const docs=[],failures=[];let live=0,retained=0;
+ let old=[];try{const previous=JSON.parse(fs.readFileSync(out,'utf8'));if(Array.isArray(previous.documents))old=previous.documents;}catch(e){if(e.code!=='ENOENT')onProgress('Previous news cache could not be read; synchronizing fresh results');}
+ const oldBySource=new Map(old.filter(x=>NEWS_SOURCES.some(s=>s.url===x.source)).map(x=>[x.source,x]));
  for(let i=0;i<NEWS_SOURCES.length;i++){
   const {url,label}=NEWS_SOURCES[i];try{
-   const r=await fetchImpl(url,{redirect:'error',headers:{accept:'text/html','user-agent':'SumcoinHelper/0.0.10-public-meta'},signal:AbortSignal.timeout(12000)});
+   const r=await fetchImpl(url,{redirect:'error',headers:{accept:'text/html','user-agent':`SumcoinHelper/${VERSION}-public-meta`},signal:AbortSignal.timeout(12000)});
    if(!r.ok)throw Error('HTTP '+r.status);if(Number(r.headers?.get?.('content-length')||0)>900000)throw Error('Article too large');
    const html=await r.text();if(Buffer.byteLength(html)>900000)throw Error('Article too large');
    const headline=meta(html,'og:title')||meta(html,'twitter:title')||label;
@@ -21,11 +24,15 @@ export async function syncNews({fetchImpl=fetch,out='./data/news.json',onProgres
    // Short publisher-supplied summaries only. Never auto-generate protocol assertions.
    const description=summary.slice(0,300);
    if(!/sumcoin|indxcoin|regalados|bmcs/i.test(headline+' '+description))throw Error('Not a relevant Sumcoin story');
-   docs.push({id:`news-${i}`,title:`${headline.slice(0,170)} (journalism / press, unreviewed)`,text:description,source:url,reviewed:false,date:meta(html,'article:published_time').slice(0,30),publisher:label});
+   docs.push({id:`news-${i}`,title:`${headline.slice(0,170)} (journalism / press, unreviewed)`,text:description,source:url,reviewed:false,date:meta(html,'article:published_time').slice(0,30),publisher:label,stale:false});live++;
    onProgress(`News indexed: ${label}`);
-  }catch(e){failures.push({url,reason:e.message});onProgress(`News skipped: ${label}: ${e.message}`);}
+  }catch(e){failures.push({url,reason:e.message});
+   const cached=oldBySource.get(url);
+   if(cached&&cached.text&&cached.source===url){docs.push({...cached,reviewed:false,stale:true});retained++;}
+   onProgress(`News ${cached?'retained from previous sync':'unavailable'}: ${label}: ${e.message}`);
+  }
  }
  if(!docs.length)throw Error('No news metadata available; existing index preserved');
  fs.mkdirSync(path.dirname(out),{recursive:true,mode:0o700});const t=out+'.'+process.pid+'.new';fs.writeFileSync(t,JSON.stringify({indexedAt:new Date().toISOString(),reviewed:false,documents:docs,failures},null,2)+'\n',{mode:0o600});fs.renameSync(t,out);
- return {articles:docs.length,failures:failures.length};
+ return {articles:docs.length,live,retained,failures:failures.length};
 }

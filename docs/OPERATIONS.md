@@ -25,10 +25,10 @@ Natural auto-replies remember only their **reviewed topic identifier and respons
 |---|---|---|
 | `knowledge/` | Reviewed FAQs, podcast chapters, founder update, news seed references | Yes, public and sourced |
 | `data/state.json` | Group mode and aggregate statistics | **Never** |
-| `data/learning.json` | Hashed patterns, moderator drafts and approved answers | **Never** |
+| `data/learning.json` | Hashed patterns (including historical fingerprints), moderator drafts and approved answers | **Never** |
 | `data/escalations.json` | Review queue and verified reviewer registration | **Never** |
 | `data/group-index.json` | Privacy-filtered new group excerpts (90-day / 5,000 cap) | **Never** |
-| `data/synced.json` | Approved public docs snapshot | **Never** (regenerated) |
+| `data/synced.json` | Unreviewed public docs snapshot | **Never** (regenerated) |
 | `data/github-docs.json` · `data/news.json` | Unreviewed public documentation and news metadata | **Never** (regenerated) |
 | `data/social-posts.json` | Optional imported public X archive | **Never** |
 | `.env` | Telegram and optional AI credentials; developer ID allowlist | **Never** |
@@ -60,25 +60,25 @@ The timer refreshes allowlisted public documentation, GitHub text and attributed
 
 ## Publishing a code release
 
-Download the versioned ZIP to the Mac and run its `scripts/push-update.sh` from the extracted root. It clones the existing repository into a temporary directory under `~/Documents`, verifies the approved base version and key checksums, runs the regression suite, stages only public source files, then commits and tags the new version. It neither force-pushes nor includes `data/` or `.env`. Deploy on VM using `git pull --ff-only origin main`, tests and a user-service restart.
+Download the versioned ZIP to the Mac and run its `scripts/push-update.sh` from the extracted root. It clones the existing repository into a temporary directory under `~/Documents`, verifies the approved base version and exact GitHub base commit, runs the regression suite, stages only public source files, then commits and tags the new version. It neither force-pushes nor includes `data/` or `.env`. Deploy on VM using `git pull --ff-only origin main`, tests and a user-service restart.
 
 See [CHANGELOG.md](../CHANGELOG.md) for all historical changes.
 
 ## Import historical Telegram exports privately
 
-On the VM, after deploying this release, run the existing importer with a local `result.json` file:
+After deploying this release, run **on your Mac** with the authorized `result.json.zip` in Downloads:
 
 ```bash
 cd /home/electrumbtc1/telegram-sum-helper
 export NVM_DIR="$HOME/.nvm"
 source "$NVM_DIR/nvm.sh"
-npm run ingest -- /secure/local/path/result.json
+bash scripts/import-history-safe.sh < /secure/local/path/result.json
 ```
 
 Or send the exported JSON directly through an SSH pipe from a trusted Mac:
 
 ```bash
-unzip -p "$HOME/Downloads/result.json.zip" result.json | ssh electrumbtc1@YOUR_VM_HOST 'cd /home/electrumbtc1/telegram-sum-helper && /home/electrumbtc1/.nvm/versions/node/v24.22.2/bin/node scripts/learn-export.mjs -'
+unzip -p "$HOME/Downloads/result.json.zip" result.json | ssh electrumbtc1@YOUR_VM_HOST 'bash /home/electrumbtc1/telegram-sum-helper/scripts/import-history-safe.sh'
 ```
 
-Replace `YOUR_VM_HOST` with your actual SSH destination and change the ZIP path if saved elsewhere. This imports only privacy-filtered question-pattern fingerprints, not a copy of the full transcript, users, or messages. Do not commit or push the original export or `data/learning.json`. The published, anonymized aggregate summary is in `docs/COMMUNITY-INSIGHTS.md`.
+Replace `YOUR_VM_HOST` with your actual SSH destination and change the ZIP path if saved elsewhere. This briefly pauses the bot so a concurrent save cannot overwrite imported data, then restarts it. It stores privacy-filtered question-pattern fingerprints only, not the raw transcript, users or messages. The importer prints an aggregate count. Do not commit or push the original export or `data/learning.json`. The published, anonymized aggregate summary is in `docs/COMMUNITY-INSIGHTS.md`.

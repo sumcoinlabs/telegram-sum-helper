@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml/badge.svg"></a>
-  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/releases/tag/v0.0.12"><img alt="Version 0.0.12" src="https://img.shields.io/badge/version-0.0.12-blue"></a>
+  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/releases/tag/v0.0.13"><img alt="Version 0.0.12" src="https://img.shields.io/badge/version-0.0.13-blue"></a>
   <img alt="Node.js 20.11 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20.11-339933?logo=nodedotjs&logoColor=white">
   <img alt="14 supported locales" src="https://img.shields.io/badge/locales-14-0A73B7">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green"></a>
@@ -26,7 +26,7 @@
 - **Live SUM reference rates:** Currency names and codes (including yen/JPY); public read-only blockchain lookup via `/tx` and `/address`.
 - **Verified knowledge:** Reviewed FAQs, official documentation, dated podcast transcripts, project updates, public GitHub documentation, news references, and optional X archives. Unreviewed sources are not automatically treated as current facts.
 - **Ongoing learning:** Privacy-filtered *new* group excerpts are stored on the VM; verified admin/developer answers become drafts until explicitly sourced and approved.
-- **Free offline answering:** The OpenAI API is optional. The bot is a retrieval-based assistant, not a self-training language model.
+- **Free offline answering:** The OpenAI API is optional; without a key answers use reviewed retrieval, not open-ended generation.
 
 ## Install or update
 
@@ -55,14 +55,14 @@ systemctl --user restart telegram-sum-helper.service
 | `/tx TXID` · `/address PUBLIC_ADDRESS` | Read-only blockchain checks |
 | `/find QUERY` · `/podcast QUERY` · `/news` | Search source material |
 | `/stop` · `/resume` · `/privacy` | Control automatic replies and see data policy |
-| `/mode reply` · `/drafts` · `/approve ID` | Group-admin controls |
+| `/mode reply` · `/status` · `/drafts` | Group-admin controls and diagnostics |
 
 ## Data and trust
 
 - Live state, approved community answers and the private, 90-day group index are stored under `data/` on the VM. **`.env` and `data/` are Git-ignored and must never be pushed to GitHub.**
 - Reviewed public facts are versioned under `knowledge/`; historical podcasts, social posts, news, and scraped sources remain attributable and unreviewed until confirmed.
 - The daily `telegram-sum-helper-sync.timer` updates **public** knowledge sources on the VM; it does not publish member conversations.
-- The Telegram Bot API cannot read messages from before the bot was added. To backfill older history, an authorized Telegram Desktop export is needed.
+- For older history, stream an authorized Telegram Desktop export to the private VM importer. The bot cannot retrieve earlier messages through the Bot API.
 - Never share seed phrases, private keys, authentication codes, or wallet passwords with the bot.
 
 See [Operations](docs/OPERATIONS.md) for deployment, source synchronization, admin approval, storage paths and privacy details; see [CHANGELOG.md](CHANGELOG.md) for the full version history.

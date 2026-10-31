@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.13 — 2026-10-31
+
+- Fail closed for privileged group commands when Telegram administrator verification fails, while still suppressing uncertain automatic replies (prevents accidental privilege escalation during API outages).
+- Derive the startup version from `package.json` instead of a stale hardcoded banner; add admin-only `/status` reporting version, response engine, source freshness, retained historical patterns and news failures without exposing secrets.
+- Improve unattended public-news synchronization: print source-level failures, preserve previously fetched publisher metadata with a visible stale flag, and never treat news as reviewed protocol truth.
+- Safely import historical Telegram questions by streaming the owner's export through SSH without storing raw messages on the VM; pause and restart the bot around the atomic learning database merge to prevent concurrent-save loss.
+- Keep imported anonymized historical question fingerprints across the 30-day new-question rolling window, with the existing 1,000-pattern cap and no promotion of unapproved claims to facts.
+- Select specific reviewed FAQs over broad categories for common historical questions, including mobile staking, legacy-wallet balances, liquidity versus reference pricing, and migration payments. Exact export re-imports are idempotent by one-way file digest.
+- Replace fragile file-hash GitHub publishing checks with an exact verified v0.0.12 base-commit check. No forced push, backups, `.env` or VM runtime data in the release.
+- Add regression tests for historical import persistence, fresh/news-cache fallback, version reporting and safe publisher behavior.
+
+
 ## 0.0.12 — 2026-10-31
 
 - Fix contradictory consensus replies: *Is SUM PoS?* receives **Yes**, *Is SUM PoW?* receives **No**, *Was Sumcoin originally PoW?* receives **Yes**, and ambiguous/negative questions receive neutral, dated context. Localized responses for all 14 supported languages.

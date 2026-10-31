@@ -6,6 +6,7 @@ import { ConversationAI } from './ai.js';
 import { createHandler } from './bot.js';
 import { Escalations } from './escalations.js';
 import { GroupIndex } from './group-index.js';
+import { VERSION } from './version.js';
 
 const token=process.env.TELEGRAM_BOT_TOKEN?.trim();
 const config={allowedChatUsername:(process.env.ALLOWED_CHAT_USERNAME||'').trim().replace(/^@/,''),allowedChatId:process.env.ALLOWED_CHAT_ID||'',initialMode:process.env.INITIAL_MODE||'observe',userCooldownHours:Number(process.env.USER_COOLDOWN_HOURS||6),topicCooldownSeconds:Number(process.env.TOPIC_COOLDOWN_SECONDS||120),autoAI:process.env.AUTO_AI==='true',groupIndexEnabled:process.env.GROUP_INDEX_ENABLED!=='false',learningEnabled:process.env.LEARNING_ENABLED!=='false',trustedDeveloperIds:(process.env.TRUSTED_DEVELOPER_IDS||'').split(',').map(v=>v.trim()).filter(v=>/^\d{2,20}$/.test(v)).map(Number),allowPrivateChats:process.env.ALLOW_PRIVATE_CHATS==='true',aiDailyLimit:Number(process.env.AI_DAILY_LIMIT||100)};
@@ -19,7 +20,7 @@ const ai=new ConversationAI({apiKey:process.env.OPENAI_API_KEY||'',model:process
 const client=new TelegramClient(token);
 const me=await client.getMe();
 if(!me.can_read_all_group_messages)console.warn('Bot privacy may prevent free-form group messages unless the bot is a group administrator. See README auto-support setup.');
-console.log(`Sumcoin Helper v0.0.10: @${me.username} | authorized group ${config.allowedChatUsername||config.allowedChatId} | mode ${state.data.mode} | ${knowledge.documents().length} knowledge entries | AI ${ai.apiKey?'configured':'retrieval-only'}`);
+console.log(`Sumcoin Helper v${VERSION}: @${me.username} | authorized group ${config.allowedChatUsername||config.allowedChatId} | mode ${state.data.mode} | ${knowledge.documents().length} knowledge entries | AI ${ai.apiKey?'configured':'retrieval-only'}`);
 await client.deleteWebhook();
 try{await client.setMyCommands();}catch(e){console.error('Optional command menu failed:',e.message);}
 for(const language of ['es','pt','fr','de','it','ru','zh','ar','hi','ja','ko','tr','id']){try{await client.setMyCommands(language);}catch(e){console.error(`Optional ${language} command menu failed:`,e.message);}}

@@ -27,19 +27,20 @@ export class Learning {
     if(!this.storeExamples){let changed=false;for(const p of Object.values(this.data.patterns))if('example' in p){delete p.example;changed=true;}if(changed)this.save();}
   }
   save(){fs.mkdirSync(path.dirname(this.file),{recursive:true,mode:0o700});const tmp=this.file+'.'+process.pid+'.new';fs.writeFileSync(tmp,JSON.stringify(this.data,null,2)+'\n',{mode:0o600});fs.renameSync(tmp,this.file);}
-  prune(){const n=this.now();for(const [k,p] of Object.entries(this.data.patterns))if(n-p.seen>DAYS_30)delete this.data.patterns[k];this.data.pending=this.data.pending.slice(-150);
+  prune(){const n=this.now();for(const [k,p] of Object.entries(this.data.patterns))if(!p.historical&&n-p.seen>DAYS_30)delete this.data.patterns[k];this.data.pending=this.data.pending.slice(-150);
     const keys=Object.entries(this.data.patterns).sort((a,b)=>b[1].count-a[1].count || b[1].seen-a[1].seen);
     for(const [key] of keys.slice(1000))delete this.data.patterns[key];}
-  observe(q,topic=null,language='unknown'){
+  observe(q,topic=null,language='unknown',{historical=false,save=true}={}){
     const s=sanitizeQuestion(q);if(!s)return false;
     const key=fingerprint(s);if(key.length<5)return false;
     const p=this.data.patterns[key]||={count:0,topic:null,language,seen:0};
     delete p.example;
-    if(this.storeExamples)p.example=s;
+    if(this.storeExamples&&!historical)p.example=s;
     p.count=Math.min(p.count+1,100000);p.seen=this.now();
+    if(historical){p.historical=true;p.historicalCount=Math.min((p.historicalCount||0)+1,100000);}
     if(topic&&p.topic!==topic)p.topic=topic;
     if(/^[a-z]{2}$/.test(language))p.language=language;
-    this.data.patterns[key]=p;this.prune();this.save();return true;
+    this.data.patterns[key]=p;if(save){this.prune();this.save();}return true;
   }
   // Automatic language/intent adaptation: common approved-topic phrasings can trigger
   // retrieval. This never creates factual answers from ordinary group-member statements.
@@ -69,7 +70,7 @@ export class Learning {
   }
   reject(id){const prev=this.data.pending.length;this.data.pending=this.data.pending.filter(x=>x.id!==id);if(this.data.pending.length!==prev){this.save();return true;}return false;}
   stats(){const hot=Object.values(this.data.patterns).sort((a,b)=>b.count-a.count).slice(0,5);
-    return `Learned question patterns: ${Object.keys(this.data.patterns).length}\nPending moderator-reviewed answers: ${this.data.pending.length}\nApproved answers: ${this.data.approved.length}\nRepeated patterns (redacted):\n${hot.map(x=>`${x.count}× [${x.language||'?'} / ${x.topic||'unclassified'}] ${x.example||'(no text stored)'}`).join('\n')||'(none)'}`;
+    return `Learned question patterns: ${Object.keys(this.data.patterns).length} (historical: ${Object.values(this.data.patterns).filter(p=>p.historical).length})\nPending moderator-reviewed answers: ${this.data.pending.length}\nApproved answers: ${this.data.approved.length}\nRepeated patterns (redacted):\n${hot.map(x=>`${x.count}× [${x.language||'?'} / ${x.topic||'unclassified'}] ${x.example||'(no text stored)'}`).join('\n')||'(none)'}`;
   }
   review(){return this.data.pending.slice(0,6).map(x=>`#${x.id} (${x.kind}): ${x.title}\nAnswer: ${x.text.slice(0,250)}\nSource: ${x.source||'MISSING: add a source before approval'}`).join('\n\n')||'No pending community answers.';}
 }
