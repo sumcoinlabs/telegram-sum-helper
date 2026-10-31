@@ -1,0 +1,9 @@
+[Unit]
+Description=Update Sumcoin Helper public documentation (no private conversation upload)
+[Service]
+Type=oneshot
+WorkingDirectory=/home/electrumbtc1/telegram-sum-helper
+ExecStart=/home/electrumbtc1/.nvm/versions/node/v24.22.2/bin/node scripts/sync-all.mjs
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true

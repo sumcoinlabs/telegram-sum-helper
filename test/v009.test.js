@@ -70,7 +70,7 @@ test('v009 rate API uses requested JPY record, not an FX estimate',async()=>{
  const reply=await livePrice({currency:'JPY',amount:5,fetchImpl});assert.match(reply,/5 SUM ≈ 945,617\.50 JPY/);assert.doesNotMatch(reply,/USD/);
 });
 test('v009 podcast chaptered transcript is packaged as unreviewed and never becomes curated answers',()=>{
- const k=new Knowledge();const p=k.documents().filter(x=>x.kind==='podcast');assert.equal(p.length,8);assert.equal(p.filter(x=>x.reviewed!==false).length,0);assert.ok(k.curated.length>=57);
+ const k=new Knowledge();const p=k.documents().filter(x=>x.kind==='podcast'&&x.id.startsWith('podcast-1-'));assert.equal(p.length,8);assert.equal(p.filter(x=>x.reviewed!==false).length,0);assert.ok(k.curated.length>=57);
  assert.match(p[2].body,/proof of work/i);
 });
 test('v009 social import accepts user-supplied official X archive data but not unrelated $SUM',()=>{

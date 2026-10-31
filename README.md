@@ -1,6 +1,47 @@
 # Telegram Sum Helper
 
-**v0.0.9 — natural-language reliability, expanded current FAQs, podcast context, and safe X archive intake.**
+**v0.0.10 — private ongoing group learning, moderator-reviewed Q&A, additional transcripts, and periodic public research.**
+
+## What's new in v0.0.10
+
+- **Ongoing public-group indexing on the VM:** `src/group-index.js` saves short, relevant excerpts from new text messages in `data/group-index.json` (private file mode 0600). No Telegram user IDs, usernames, or private chats are included. Secrets, direct contact information, long wallet addresses, unrelated discussion and external links are excluded. Maximum **5,000 excerpts** and **90-day retention**. It starts working after deployment, even when the bot is in `observe` mode. Telegram Bot API cannot recover old group history. This is not training a model or storing the group's full raw history.
+- **Verified contributors:** A verified Telegram group administrator's reply to an indexed support question creates a **draft answer** in `data/learning.json`. A trusted non-admin developer may also submit drafts **only if their numeric Telegram ID has been explicitly listed** in `TRUSTED_DEVELOPER_IDS` in the private `.env`. No answer becomes a verified fact automatically. Use `/drafts`, `/source ID | OFFICIAL_URL`, `/approve ID`, or `/reject ID`. Source URLs must be allowlisted and the administrator must check that they genuinely support the claim. Edited/revised replies can create further drafts for review.
+- **Members' privacy controls:** `/privacy` explains the index; reply to your own message with `/forget` to delete its stored excerpt. This only covers *bot-indexed excerpts*, not messages kept by Telegram or other users. `/stop` still pauses automatic responses, not Telegram data retention. Group moderators should post a clear notice before turning on this feature.
+- **Additional transcripts, searchable as unreviewed:** **Sumcoin Podcast episode 2** (22 chapters) and **Sumtoshi's July 8, 2024 project update** (8 chapters). Bundled as `knowledge/podcast-2.json` and `knowledge/project-update-2024-07-08.json`; neither is silently promoted into current wallet/consensus guidance. The July 2024 migration UI and faucet discussion is *historical*, not a guarantee those services are currently available. `/podcast keywords` retrieves short attributed transcript excerpts. No public video URLs were supplied for these two transcripts; do not invent them.
+- **Public GitHub documentation discovery:** `src/discovery.js` retrieves small documentation excerpts from fixed repositories in `sumcoinlabs` (Core, Flutter, sumcoinlib, ElectrumX, Insight API/UI, Sumcore, bot). It skips code, large files, secrets and unsupported formats. Uses read-only HTTPS and GitHub's public tree API; failures preserve the previous index. Stored in `data/github-docs.json` and tagged *unreviewed*. Additional official docs still use the original sync.
+- **Historical news discovery:** `src/news.js` refreshes only publisher headline/description metadata for allowlisted news sources, including 2026 MIT Technology Review coverage, the 2022 ACCESSWIRE BMCS announcement, and a 2023 Sumcoin Index retrospective. Three short, attributed editorial pointers are bundled in `knowledge/news-seed.json` even if a publisher blocks automated fetching. `/news` displays available titles and links; third-party reporting is not treated as official network specifications. No complete copyrighted article bodies are mirrored.
+- **Daily updates:** `npm run sync:all` updates all three *public* indexes. `deploy/telegram-sum-helper-sync.timer` can run this daily under the existing `electrumbtc1` user. The running bot reloads changed public indexes approximately once per minute. No separate database server, tokens, or paid AI account are required.
+- **No automatic GitHub publication:** The `.env` and entire `data/` directory remain Git-ignored. Only reviewed public knowledge and release files are published to GitHub through the Mac release script. The VM does **not** push member messages or pending drafts to GitHub.
+- **Languages:** Existing explicitly localized flows in **14 languages** remain; Unicode text is retained/searchable in more scripts. Unknown languages safely fall back to English without pretending that this offline, no-paid-LLM bot can fluently translate every language on Earth.
+
+### VM layout
+
+```text
+/home/electrumbtc1/telegram-sum-helper/
+  knowledge/                versioned vetted FAQs, attributed historical source files
+  data/state.json           active mode, statistics
+  data/learning.json        recurring patterns, approved answers, moderator drafts
+  data/escalations.json     pending requests and verified reviewer registration
+  data/group-index.json    last 90 days of privacy-filtered group excerpts (new)
+  data/synced.json          official pages and fixed documentation
+  data/github-docs.json     discovered unreviewed GitHub documentation (new)
+  data/news.json            publisher headlines and metadata (new)
+  data/social-posts.json    optional unreviewed X archive import
+```
+
+Both `.env` and `data/` are **never committed**; files under `data/` should be private to `electrumbtc1`.
+
+### Daily sync and publication policy
+
+Run `npm run sync:all` manually or use the included user systemd timer. GitHub discovery requires access to public GitHub APIs and may be rate limited. The timer only refreshes existing files atomically when sources are successfully read; missing sources retain earlier data. It does not send conversations, approved answers, admin identity, logs or secrets anywhere. The running bot reads updated document indexes without restarting, but model responses remain limited to curated or explicitly approved facts.
+
+### Moderator commands
+
+Within the authorized group, admins can use `/drafts` to see candidate admin/developer replies, `/history keyword` to search short anonymized excerpts, `/learn` for aggregate statistics, `/source ID | https://www.sumcoin.org/about/` to attach the relevant source, and `/approve ID` or `/reject ID` after checking correctness. The verified `@SumcoinAdmin` account can use `/drafts`, `/source`, `/approve`, `/reject` in its *private review chat* as well. Existing `/review` continues to show unanswered questions in private chat; group `/review` shows pending learning drafts.
+
+**Important:** A verified administrator's post is not automatically true. Explicit approval is a deliberate editorial gate. Forum questions are not always correctly recognized in all languages, and the tool does not have Telegram's historic group archives; use the Telegram Desktop JSON export to backfill old discussion.
+
+---
 
 ## What's new in v0.0.9
 

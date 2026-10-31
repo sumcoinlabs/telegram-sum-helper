@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "reviewed": false,
+  "provenance": "Editorial pointers to publicly available news, not verified protocol facts. Summaries are contextual and source-attributed.",
+  "documents": [
+    {
+      "id":"news-seed-2026-mit",
+      "title":"MIT Technology Review, September 2026 — investigative reporting on INDXcoin and its relationship to Sumcoin (unreviewed reporting)",
+      "text":"A September 2026 MIT Technology Review investigation covers INDXcoin and the Regalados, including past involvement with Sumcoin and disagreements over cryptocurrency exchange listings. The reporting discusses disputes and statements attributed to people interviewed. Treat claims as attributed reporting, not as confirmed current Sumcoin protocol behavior.",
+      "source":"https://www.technologyreview.com/2026/09/10/1143588/indxcoin-god-regalados-sell-crypto-investors-lost-everything/",
+      "date":"2026-09-10",
+      "reviewed":false
+    },
+    {
+      "id":"news-seed-2022-accesswire",
+      "title":"ACCESSWIRE February 2022 — BMCS announces Sumcoin fund (historical press release)",
+      "text":"A BMCS press release dated February 9, 2022 announced a proposed investment fund associated with Sumcoin. The release described the original proof-of-work period and corporate plans as stated by the issuer. This is a company announcement, not independent verification of launch results or a description of the current PoS network.",
+      "source":"https://www.accessnewswire.com/newsroom/en/blockchain-and-cryptocurrency/bmcs-launches-the-first-crypto-investment-fund-for-sumcoin-687976",
+      "date":"2022-02-09",
+      "reviewed":false
+    },
+    {
+      "id":"news-seed-2023-index",
+      "title":"Sumcoin Index April 2023 — Sumcoin at five years (historical project article)",
+      "text":"An April 2023 project article recounts Sumcoin's development since the first block in 2018, its index-based pricing concept, and the project's roadmap and challenges. Statements about future performance, volatility, and technical configuration are historical context rather than a guarantee of present capabilities.",
+      "source":"https://www.sumcoinindex.com/news/sumcoin-at-5-and-whats-next.php",
+      "date":"2023-04-28",
+      "reviewed":false
+    }
+  ]
+}

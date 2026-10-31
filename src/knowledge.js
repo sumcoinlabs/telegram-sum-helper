@@ -7,14 +7,19 @@ export const SYNC_FILE = new URL('../data/synced.json', import.meta.url);
 export const VIDEO_FILE = new URL('../data/video-transcripts.json', import.meta.url);
 export const PODCAST_FILE = new URL('../knowledge/podcast-1.json', import.meta.url);
 export const SOCIAL_FILE = new URL('../data/social-posts.json', import.meta.url);
+export const PODCAST_TWO_FILE = new URL('../knowledge/podcast-2.json', import.meta.url);
+export const PROJECT_UPDATE_FILE = new URL('../knowledge/project-update-2024-07-08.json', import.meta.url);
+export const GITHUB_DOCS_FILE = new URL('../data/github-docs.json', import.meta.url);
+export const NEWS_FILE = new URL('../data/news.json', import.meta.url);
+export const NEWS_SEED_FILE = new URL('../knowledge/news-seed.json', import.meta.url);
 const STOP = new Set('a an the is are was were be been to in on at for my me i it of we you your and or do does did can could how what why where when who this that with from some any there please help like have has had about tell would want need get very just more into by through does they them are our an as should my he she an 100 200'.split(' '));
 const ES = {retirar:'withdraw',sacar:'withdraw',dinero:'money',dolares:'usd',billetera:'wallet',monedero:'wallet',saldo:'balance',vender:'sell',comprar:'buy',como:'how',puedo:'can',sumcoin:'sumcoin',monedas:'coins',perdido:'missing',perdi:'missing',recuperar:'recover',frase:'phrase',semilla:'seed',enviar:'send',recibir:'receive',estafa:'scam',cuanto:'how',por:'for',favor:'please',recompensas:'staking',apostar:'staking',recompensa:'staking'};
 export function normalize(text) {
   return String(text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 }
 export function tokens(text) {
-  return (normalize(text).match(/[a-z0-9]+/g)||[])
-    .map(w=>ES[w]||w).filter(w=>w.length>2 && !STOP.has(w)).map(w=>w.endsWith('ing')&&w.length>6?w.slice(0,-3):w.endsWith('s')&&w.length>5?w.slice(0,-1):w);
+  return (normalize(text).match(/[\p{L}\p{N}]+/gu)||[])
+    .map(w=>ES[w]||w).filter(w=>(w.length>2||/[^\x00-\x7f]/.test(w)) && !STOP.has(w)).map(w=>w.endsWith('ing')&&w.length>6?w.slice(0,-3):w.endsWith('s')&&w.length>5?w.slice(0,-1):w);
 }
 export function tokenizeSet(text) { return [...new Set(tokens(text))]; }
 function readJson(file, fallback) { try {return JSON.parse(fs.readFileSync(file,'utf8'));} catch(e) {if(e.code==='ENOENT')return fallback; throw e;} }
@@ -25,7 +30,28 @@ export class Knowledge {
     this.videos = readJson(options.videoFile||VIDEO_FILE,{documents:[]}).documents;
     this.podcasts = readJson(options.podcastFile||PODCAST_FILE,{documents:[]}).documents;
     this.social = readJson(options.socialFile||SOCIAL_FILE,{documents:[]}).documents;
+    this.podcastTwo = readJson(options.podcastTwoFile||PODCAST_TWO_FILE,{documents:[]}).documents;
+    this.projectUpdate = readJson(options.projectUpdateFile||PROJECT_UPDATE_FILE,{documents:[]}).documents;
+    this.githubDocs = readJson(options.githubDocsFile||GITHUB_DOCS_FILE,{documents:[]}).documents;
+    this.news = readJson(options.newsFile||NEWS_FILE,{documents:[]}).documents;
+    this.newsSeed = readJson(options.newsSeedFile||NEWS_SEED_FILE,{documents:[]}).documents;
+    this.externalFiles = [
+     ['synced',options.syncFile||SYNC_FILE],['videos',options.videoFile||VIDEO_FILE],
+     ['social',options.socialFile||SOCIAL_FILE],['githubDocs',options.githubDocsFile||GITHUB_DOCS_FILE],['news',options.newsFile||NEWS_FILE]
+    ];
+    this.externalStamps = new Map();this.nextRefresh=0;
     this.learned = options.learned||[];
+  }
+  refreshExternal(now=Date.now()){
+    if(now<this.nextRefresh)return;
+    this.nextRefresh=now+60_000;
+    for(const [field,file] of this.externalFiles){
+      try{const key=file instanceof URL?file.href:String(file),stamp=fs.statSync(file).mtimeMs;
+       if(this.externalStamps.get(key)===stamp)continue;
+       const parsed=JSON.parse(fs.readFileSync(file,'utf8'));
+       if(Array.isArray(parsed.documents)){this[field]=parsed.documents;this.externalStamps.set(key,stamp);}
+      }catch(e){if(e.code!=='ENOENT')console.warn('Knowledge reload skipped for '+field+': '+e.message);}
+    }
   }
   documents() {
     const primary = this.curated.map(a=>({...a,kind:'curated',body:a.text}));
@@ -34,7 +60,11 @@ export class Knowledge {
     const videos=this.videos.filter(a=>a.source&&a.text).map(a=>({...a,kind:'video',body:a.text}));
     const podcasts=this.podcasts.filter(a=>a.source&&a.text).map(a=>({...a,kind:'podcast',body:a.text}));
     const social=this.social.filter(a=>a.source&&a.text).map(a=>({...a,kind:'social',body:a.text}));
-    return [...primary,...learned,...synced,...videos,...podcasts,...social];
+    const podcastTwo=this.podcastTwo.filter(a=>a.source&&a.text).map(a=>({...a,kind:'podcast',body:a.text}));
+    const projectUpdate=this.projectUpdate.filter(a=>a.source&&a.text).map(a=>({...a,kind:'project-update',body:a.text}));
+    const githubDocs=this.githubDocs.filter(a=>a.source&&a.text).map(a=>({...a,kind:'github-docs',body:a.text}));
+    const news=[...this.newsSeed,...this.news].filter(a=>a.source&&a.text).map(a=>({...a,kind:'news',body:a.text}));
+    return [...primary,...learned,...synced,...videos,...podcasts,...podcastTwo,...projectUpdate,...social,...githubDocs,...news];
   }
   search(input,{limit=5}={}) {
     const terms = tokenizeSet(retrievalTerms(input)), q=normalize(input);
@@ -70,10 +100,30 @@ export class Knowledge {
       if(d.kind==='synced')score*=0.72;
       if(d.kind==='video'||d.kind==='podcast')score*=0.45;
       if(d.kind==='social')score*=0.28;
+      if(['news','project-update','github-docs'].includes(d.kind))score*=0.35;
       const coverage=matched / Math.max(terms.length,1);
       if(score>=3 && (coverage>=0.16 || score>=8))scored.push({...d,score:Math.round(score*100)/100,coverage});
     }
     return scored.sort((a,b)=>b.score-a.score).slice(0,limit);
+  }
+  transcriptSearch(query,limit=3){
+    const raw=normalize(String(query||'').trim());
+    if(!raw)return [];
+    const isTwo=/(?:^|\b)(?:episode\s*2|podcast\s*2|2)(?:\b|$)/u.test(raw);
+    const isOne=/(?:^|\b)(?:episode\s*1|podcast\s*1|1)(?:\b|$)/u.test(raw);
+    const isUpdate=/2024|sumtoshi|founder|project update/.test(raw);
+    const qTerms=new Set(tokens(raw).filter(x=>!['sumcoin','podcast','episode','founder','sumtoshi','2024','update','transcript','what','said'].includes(x)));
+    const corpus=this.documents().filter(d=>['podcast','project-update'].includes(d.kind));
+    const results=corpus.map(d=>{
+      if(isTwo&&!d.id.startsWith('podcast-2-'))return null;
+      if(isOne&&!d.id.startsWith('podcast-1-'))return null;
+      if(isUpdate&&d.kind!=='project-update')return null;
+      const title=normalize(d.title||''),body=normalize(d.body||'');
+      let score=0;for(const term of qTerms){if(title.includes(term))score+=5;else if(body.includes(term))score+=1;}
+      if(!qTerms.size)score=1;
+      return {...d,score};
+    }).filter(d=>d&&d.score>0).sort((a,b)=>b.score-a.score||a.title.localeCompare(b.title));
+    return results.slice(0,limit);
   }
   find(id) {return this.documents().find(d=>d.id===id);}
 }

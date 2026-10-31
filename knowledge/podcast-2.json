@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "source": "user-supplied:sumcoin-podcast-2",
+  "reviewed": false,
+  "provenance": "user-supplied-transcript",
+  "cautions": [
+    "This is a user-supplied transcription. Technical and marketing statements are unreviewed and may be inaccurate or dated.",
+    "Use current Core and wallet sources for live operation."
+  ],
+  "documents": [
+    {
+      "id": "podcast-2-1",
+      "title": "Sumcoin Podcast episode 2 — Intro (historical / unreviewed)",
+      "text": "all right so we're diving into some coin today an index-based cryptocurrency honestly you had me at index based we've got their white paper right here the website FAQs even some diagrams lots to unpack here it looks like they've put a lot of work into this and you know our listeners always eager to get ahead right want to know if some coins worth their time so should we Jump Right In let's dive in the really",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-2",
+      "title": "Sumcoin Podcast episode 2 — What is Sumcoin (historical / unreviewed)",
+      "text": "intriguing thing about some coin is how they're positioning themselves right from the start they're aiming to fulfill bitcoin's original promise true peer-to-peer you know electronic cash I like it cutting out the middleman that's the whole point isn't it exactly okay so looking at Sun coin's website here they're calling themselves a global decentralized digital currency aiming for let me guess stability speed and security of course everyone says that right right it's practically in the crypto marketing starter pack at this point but hold on a minute Intex based now this is where things get a bit more interesting definitely and they're serious about this even their logo it's a white Greek Sigma on a blue background ah very clever summation for anyone who uh remembers their math classes anyway exactly they're all about that index approach okay got it so they're tracking a bunch of different cryptos but how exactly is it like say an index fund but for crypto it's a good analogy but there's a key difference see some coin doesn't own any of the cryptocurrencies that it tracks it's not like an index fund that holds shares in companies think of it more like the Dow Jones Industrial Average it reflects the combined value of those 30 major companies but it doesn't actually own them some coins similar it mirrors the Market's performance you know by tracking the top 100 cryptocurrencies by market cap oh I see what you're saying so it's more like taking the temperature of the entire Market you're not just betting on one horse in the race you're betting on the whole field exactly that's interesting and hang on I think I saw in their materials that this whole index IDE isn't new for them is it didn't they say something about 2016",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-3",
+      "title": "Sumcoin Podcast episode 2 — Sumcoin History (historical / unreviewed)",
+      "text": "right some coin was actually conceived back in 2016 and they mined their first block in 2018 they were talking about index-based crypto before it was cool wow 2016 that's what almost a decade ago in crypto years so they were pretty early on this but here's the thing they decided to skip the whole Ico craze right all those flashy token sales were huge back then that did which is uh unusual right it seems like they really going for the whole slow and steady wins the race kind of approach it's certainly a bold move in the crypto World which as we know is not exactly known for its patients but what do you make of that does it make them more trustworthy or is it a bit of a red flag that's the question isn't it on one hand it could",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-4",
+      "title": "Sumcoin Podcast episode 2 — Is it a red flag (historical / unreviewed)",
+      "text": "show that they're serious that they're in it for the long haul they believe in their Vision enough to grow organically but on the other hand you have to wonder why they didn't go for that initial investment right right so maybe they're playing the long game or maybe they just couldn't get the funding tough to say sbut let's get real here why should our listener who values control and security Above All Else care about this index-based approach what's in it for them now that's where things get really interesting it's all about that original promise of Bitcoin remember peer-to-peer",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-5",
+      "title": "Sumcoin Podcast episode 2 — The original promise of Bitcoin (historical / unreviewed)",
+      "text": "electronic cash some coin really zeros in on that in their white paper yeah the dream no banks no intermediaries just pure decentralized transactions that was the whole idea right right but here's the thing how much of the crypto trading today actually happens that way most of it still goes through those big centralized exchanges right and those exchanges well they're not exactly immune to hacks or manipulation are they okay so some coin sees this Reliance on exchanges as what do they call it bitcoin's broken promise that's a bit dramatic don't you think maybe it's had dramatic but it gets your attention right and it does highlight a real issue for anyone who's",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-6",
+      "title": "Sumcoin Podcast episode 2 — DeFi core principles (historical / unreviewed)",
+      "text": "serious about you know the core principles of decentralized Finance okay fair point so how does sucoin actually sidestep this whole exchange problem what are they doing differently they break it down into what they call their Trifecta of differences algorithmic pricing proof of stake and that",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-7",
+      "title": "Sumcoin Podcast episode 2 — Trifecta of differences (historical / unreviewed)",
+      "text": "decentralized Network structure we talked about earlier and honestly it's more than just fancy marketing this time these differences are pretty significant okay I'm intrigued let's break down then first up algorithmic pricing we've established it's index based but how does that actually determine some coins value all right all right so picture this some coins constantly tracking the market cap of those top 100 cryptos Bitcoin ethereum all the big players and",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-8",
+      "title": "Sumcoin Podcast episode 2 — Weighted average (historical / unreviewed)",
+      "text": "it uses this proprietary formula to basically calculate a weighted average so you're basically looking at a number that represents the total market cap of all those coins and that number that's what drives the price of some coin so instead of being at the mercy of what supply and demand on a single exchange some coin is more like this Diversified portfolio exactly some coins fate is tied to the overall health of the crypto",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-9",
+      "title": "Sumcoin Podcast episode 2 — Diversification (historical / unreviewed)",
+      "text": "Market not just you know the whims of Traders on one specific platform I see so for our listeners who might be a little hesitant to go all in on something as volatile as Bitcoin some coin offers theoretically at least a bit more stability right exactly less roller",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-10",
+      "title": "Sumcoin Podcast episode 2 — Stability (historical / unreviewed)",
+      "text": "coaster more like uh well maybe a steadily Rising Ferris wheel I like that analogy okay on to the second point in this Trifecta proof of stake and look you had me at energy efficient you know how much we care about the environment on this show tell me more about this of",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-11",
+      "title": "Sumcoin Podcast episode 2 — Mining (historical / unreviewed)",
+      "text": "course so the traditional way of mining cryptocurrency proof of work it's incredibly energy intensive you've got these massive server Farms all over the planet just crunching numbers 24/7 to validate transactions yeah not exactly eco-friendly not at all now some coin",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-12",
+      "title": "Sumcoin Podcast episode 2 — Proof of Stake (historical / unreviewed)",
+      "text": "actually started with proof of work but they made the switch to proof of stake back in 2023 and this was a big deal for them both in terms of you know their carbon footprint and their overall speed see with proof of stake the people who actually own some coin the stakeholders use their existing coins to validate the transactions so instead of meeting all that electricity all those servers they're using their stake in the system as a kind of what collateral precisely it's like a guarantee right they're saying hey I've got skin in the game I'm not going to mess this up and because it doesn't require all that computational power it's also way faster how much faster are we talking we're talking 60-second block confirmation times compared to bitcoin's 10 minutes that's a big difference that's huge okay so some coin transactions are quicker and they're less harmful to the planet this Trifecta is shaping up nicely but what about the big one security if we're relying on this distributed network of stakeholders doesn't that open up some new vulnerabilities I mean couldn't someone just I don't know manipulate the system if they held in enough some coin that's where their decentralized Network structure comes in it's like their answer to that whole security question remember those diagrams where we were",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-13",
+      "title": "Sumcoin Podcast episode 2 — Decentralized (historical / unreviewed)",
+      "text": "slooking at before the ones comparing the centralized systems to the decentralized ones oh yeah the one where it's like downloading a file from one you know overloaded server versus getting it from like a bunch of your friends at the same time exactly way faster way more reliable right right so sucoin they",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-14",
+      "title": "Sumcoin Podcast episode 2 — Nodes (historical / unreviewed)",
+      "text": "operate on a network of nodes and these nodes are basically just computers running the sucoin software and here's the key each node holds a complete copy of the entire blockchain okay so there's no sing single point of failure there's no Central Authority that you have to trust so it's like even if one of these nodes goes down the whole network it just keeps on chugging along exactly",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-15",
+      "title": "Sumcoin Podcast episode 2 — Resilience (historical / unreviewed)",
+      "text": "much harder to hack much harder to manipulate it's all about that resilience that's reassuring to hear but you know this is all sounding good in theory but let's bring it back down to earth for a second how does this actually work in practice can you walk me through like a typical Sun coin",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-16",
+      "title": "Sumcoin Podcast episode 2 — Typical Transaction (historical / unreviewed)",
+      "text": "transaction sure so say you want to I don't know buy a cup of coffee with sun coin right okay my kind of transaction so you pull out your sucoin wallet app and you send you know the required amount to the coffee Shop's wallet address simple enough what happens then that transaction request it gets broadcast",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-17",
+      "title": "Sumcoin Podcast episode 2 — Transaction Request Broadcast (historical / unreviewed)",
+      "text": "across the entire sucoin network all those NOS we were talking about they get to work they verify you actually have the sum coin to spend make sure you haven't already sent it somewhere else you know all the usual stuff and this all happens what instantaneously pretty much remember those 60c block confirmation times oh yeah that's right right so much faster than waiting for a bank transfer to clear or something exactly it's what makes some coin",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-18",
+      "title": "Sumcoin Podcast episode 2 — Instant Confirmation (historical / unreviewed)",
+      "text": "actually practical to use for everyday transactions even those tiny micro payments where you need that you know near instant confirmation interesting so the transaction goes through my coffee is paid for where does the blockchain come in all right so once your transaction is verified it gets bundled together with a bunch of other recent",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-19",
+      "title": "Sumcoin Podcast episode 2 — Blocks (historical / unreviewed)",
+      "text": "transactions into what's called a block okay and then that block is added to the sucoin blockchain permanently and here's the thing every node on the network they all get a copy of this updated blockchain so there's a record of my coffee purchase on thousands of computers all over the world pretty much wow okay starting to see the appeal here it seems like some coin really wants to be used as an actual currency not just another one of those you know speculative assets right exactly and they're really sticking to that organic",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-20",
+      "title": "Sumcoin Podcast episode 2 — Organic Growth (historical / unreviewed)",
+      "text": "growth strategy we talked about no Ico no pre-mining they claim their growth is all down to you know actual people using it for transactions especially in countries with high inflation actually yeah it makes sense when your own currency is unstable you start looking for Alternatives and something like some coin fast stable low transaction fees it starts to sound pretty good you mentioned they're gaining some Traction in places like what was it Venezuela Argentina yeah and even here in the US actually it's becoming a global phenomenon it's wild to think about and",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-21",
+      "title": "Sumcoin Podcast episode 2 — Global Phenomenon (historical / unreviewed)",
+      "text": "this is where I think things get really interesting for some coin right what happens when governments you know actual governments start launching their own digital currencies Guff coins yeah the gcoins what happens when those gov coins become you know popular enough legitimate enough that they crack that top 100 cryptocurrency list right some coin starts indexing them that's fascinating it's like they'd be betting on the success of the very thing that cryptocurrency was trying to move away from you know it's a bit of a paradox isn't it it really is because if some coin this decentralized system that wants to you know level the financial playing field if their fate is tied to the performance of say a digital dollar or a digital Yuan what does that say about the future of all of this does it validate what they're doing or does it undermine the whole point of it it's like I don't know Financial arob boros or something you're that symbol of the snake eating its own tail the decentralized system finding its success by essentially incorporating the centralized system that was trying to move away from yeah it's a really fascinating question and one I think our listeners should really think about",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    },
+    {
+      "id": "podcast-2-22",
+      "title": "Sumcoin Podcast episode 2 — Conclusion (historical / unreviewed)",
+      "text": "absolutely and at the end of the day that's what it's all about isn't it learning questioning challenging our own assumptions that's how we make sense of something as complex and as rapidly changing as the world of cryptocurrency goodness said it better myself so there you have it sucoin we've covered a lot of ground today from their unusual index-based pricing model to their energy efficient proof of stake system their emphasis on decentralization there blams to be used as an everyday currency and of course that really interesting question about the role of government backed digital currencies at all of this we'll be sure to include links to some coins white paper their open source code you know all that good",
+      "source": "user-supplied:sumcoin-podcast-2",
+      "reviewed": false,
+      "provenance": "user-supplied-transcript"
+    }
+  ]
+}

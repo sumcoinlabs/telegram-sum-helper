@@ -20,7 +20,7 @@ export function isCurrentPriceQuestion(q){
   return when.test(text)&&price.test(text)&&!calculation.test(text);
 }
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
-const HELP=`Sumcoin Helper v0.0.9 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
+const HELP=`Sumcoin Helper v0.0.10 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
 /currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n/stop — pause automatic help for 24 hours; /resume — turn it on again\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid, /queue\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
 export function commandFrom(text,botUsername=''){
   const m=/^\/([a-z_]+)(?:@([a-z0-9_]+))?(?:\s+([\s\S]*))?$/i.exec(String(text||'').trim());
@@ -44,7 +44,7 @@ export function isDirectedMention(text,botUsername){
   const start=new RegExp('^\\s*(?:(?:hey|hi|hello|hola|olá)[!,.\\s]+)?@'+escaped+'\\b','i');
   return start.test(text)||/[?¿؟？]/u.test(text);
 }
-export function createHandler({client,state,config,botUsername,knowledge,learning,ai,escalations=null,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress}}){
+export function createHandler({client,state,config,botUsername,knowledge,learning,ai,escalations=null,groupIndex=null,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress}}){
   const preferences=new Map(),currencyPreferences=new Map(),seenReplies=new Map(),topicHistory=new Map(),mutedMembers=new Map(),adminCache=new Map();
   const now=()=>Date.now();
   async function send(m,text){return client.sendMessage(m,String(text).slice(0,3500));}
@@ -55,6 +55,13 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
       const isAdmin=['administrator','creator'].includes((await client.getChatMember(m.chat.id,m.from.id))?.status);
       adminCache.set(key,{value:isAdmin,until:now()+10_000});return isAdmin;
     }catch{return true;} // On verification failure, do NOT autorespond to a possible administrator.
+  }
+  async function verifiedGroupAdmin(m){
+    if(!m.from?.id||!inAllowedGroup(m.chat,config))return false;
+    // Non-admin developers can only contribute candidates when their numeric
+    // Telegram ID was explicitly configured by the owner. Not a group-admin grant.
+    if(Array.isArray(config.trustedDeveloperIds)&&config.trustedDeveloperIds.includes(m.from.id))return true;
+    try{return ['administrator','creator'].includes((await client.getChatMember(m.chat.id,m.from.id))?.status);}catch{return false;}
   }
   async function reviewer(m){
     if(m.from?.username?.toLowerCase()!==REVIEW_USERNAME.toLowerCase()||!m.from?.id)return false;
@@ -75,6 +82,7 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     try{await client.sendDirect(escalations.data.adminId,msg);escalations.markNotified(item.id);}catch(e){console.warn('Admin review DM unavailable:',e.message);}
   }
   async function tick(){
+    knowledge.refreshExternal?.();
     if(!escalations)return;
     for(const item of escalations.pending().filter(x=>!x.notified).slice(0,5))await notifyUnanswered(item);
     for(const item of escalations.due()){
@@ -169,7 +177,11 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     if(!ai.apiKey)return send(m,offline(docs,lang,expanded));
     if(!state.consumeAiQuota(CHAT_LIMIT))return send(m,offline(docs,lang,expanded)+'\n\n(AI daily limit reached.)');
     try{
-      const answer=await ai.answer({question:q,context:docs,historyKey:key,language:lang});
+      // Never send unreviewed podcast, news, social or scraped GitHub text
+      // into the generative model as authority or executable instructions.
+      const reviewedContext=docs.filter(d=>d.kind==='curated'||d.kind==='admin-approved');
+      if(!reviewedContext.length)return send(m,offline(docs,lang,expanded));
+      const answer=await ai.answer({question:q,context:reviewedContext,historyKey:key,language:lang});
       await send(m,answer.text);state.record('answered-ai',true);
     }catch(err){console.error('AI unavailable:',err.message);
       return send(m,`${t(lang,'temporarily')}\n\n${article(docs[0].id,lang)}`);}
@@ -187,6 +199,16 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     if(dm&&escalations&&await reviewer(m)&&escalations.isRegistered(m.from)){
       const c=commandFrom(m.text,botUsername);if(!c)return;
       if(c.name==='review')return send(m,escalations.pending().map(x=>`#${x.id}: ${x.question} (${x.status})`).join('\n\n')||'No unanswered questions.');
+      if(c.name==='drafts')return send(m,learning.review());
+      if(c.name==='source'){
+        const match=c.arg.match(/^(\d+)\s*\|\s*(https:\/\/\S+)$/);
+        return send(m,match&&learning.setSource(Number(match[1]),match[2])?'Source attached. Verify with /drafts, then /approve ID.':'Usage: /source ID | https://sumcoin.org/official-page');
+      }
+      if(c.name==='approve'){
+        const ok=learning.approve(Number(c.arg));if(ok)knowledge.learned=learning.data.approved;
+        return send(m,ok?'Verified knowledge approved.':'Not approved: add a valid official source with /source ID | URL.');
+      }
+      if(c.name==='reject')return send(m,learning.reject(Number(c.arg))?'Draft rejected.':'Draft ID not found.');
       if(c.name==='skip')return send(m,escalations.mark(Number(c.arg),'closed')?`Review #${c.arg} closed.`:'Review ID not found.');
       if(c.name==='answer'){
         const parts=c.arg.split('|').map(x=>x.trim());
@@ -199,13 +221,25 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
         try{await client.sendMessage(sender(item),`${approved.text}\n\nSource: ${parts[2]}`);}catch(e){console.error('Approved answer group delivery failed:',e.message);return send(m,`Approved knowledge #${id}, but delivery failed. Check the group.`);}
         escalations.mark(item.id,'closed');return send(m,`Approved and answered question #${item.id}. Future matching questions can use the reviewed answer.`);
       }
-      if(c.name==='start'||c.name==='help')return send(m,'Admin review is active. Use /review, /answer ID | answer | official URL, or /skip ID.');
+      if(c.name==='start'||c.name==='help')return send(m,'Admin review: /review for unanswered questions; /drafts for group admin answers; /source ID | URL; /approve ID; /reject ID; /answer ID | answer | URL.');
       return;
     }
     if(!group&&!(dm&&config.allowPrivateChats))return;
     if(m.date&&now()/1000-m.date>900)return;
     const command=commandFrom(m.text,botUsername);
     const lang=languageFor(m,command?.arg||m.text);
+    if(group&&!command&&groupIndex&&config.groupIndexEnabled!==false){
+      // Track relevant public discussion even while bot answers are disabled (observe).
+      // This NEVER uses untrusted group content as verified knowledge.
+      const verified=await verifiedGroupAdmin(m);
+      groupIndex.observe(m,{administrator:verified,language:lang});
+      const candidate=verified?groupIndex.candidate(m):null;
+      if(candidate && candidate.answer.length>=18 && candidate.answer.length<=1200){
+        // A moderator response (including later clarifications) is a draft.
+        // It must be explicitly approved with an official source.
+        learning.queue(candidate.question,candidate.answer,candidate.source,'group-admin-draft');
+      }
+    }
     if(command){
       const name=command.name,arg=command.arg;
       if(['start','help'].includes(name))return send(m,`${ui(lang,'help')}
@@ -222,6 +256,8 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
 /github <keywords>
 /sources
 /feedback
+/privacy | /forget (reply to your own message)
+/podcast keywords | /news
 /stop | /resume
 
 ${ui(lang,'safety')}`);
@@ -260,6 +296,21 @@ ${ui(lang,'safety')}`);
       }
       if(name==='stop'){if(!group)return;setMuted(m,true);return send(m,supportUI(lang,'muted'));}
       if(name==='resume'){if(!group)return;setMuted(m,false);return send(m,supportUI(lang,'resumed'));}
+      if(name==='privacy')return send(m,'This group helper privately indexes relevant new public group text for up to 90 days on the Sumcoin server, without storing member account IDs or names. Seed phrases and obvious personal details are excluded. Admin answers are drafts until reviewed. Reply to your own message with /forget to remove its indexed excerpt. /stop pauses automatic replies.');
+      if(name==='forget'){
+        const own=m.reply_to_message?.from?.id&&m.from?.id===m.reply_to_message?.from?.id;
+        if(!group||!own||!groupIndex)return send(m,'Reply to one of your own group messages with /forget to delete its saved excerpt.');
+        return send(m,groupIndex.forget(m.reply_to_message.message_id)?'Saved excerpt removed.':'No saved excerpt found.');
+      }
+      if(name==='podcast'){
+        const query=arg.trim();if(!query)return send(m,'Usage: /podcast what was said about staking?');
+        const docs=knowledge.transcriptSearch(query,3);
+        return send(m,docs.length?docs.map(d=>`${d.title}\nTranscript excerpt (not a verified current rule): ${d.body.slice(0,450)}\n${d.source.startsWith('https://')?d.source:'Source: user-provided transcript'}`).join('\n\n'):'No matching transcript excerpts found.');
+      }
+      if(name==='news'){
+        const docs=knowledge.documents().filter(d=>d.kind==='news').slice(0,6);
+        return send(m,docs.length?docs.map(d=>`${d.title}\n${d.source}`).join('\n\n'):'No news metadata synced yet.');
+      }
       if(name==='queue'&&group&&await admin(m))return send(m,escalations?.stats()||'Review queue not configured.');
       if(name==='sources')return send(m,'Official references: https://sumcoin.org/ | https://sumcoinwallet.org/ | https://github.com/sumcoinlabs/sumcoin | https://github.com/sumcoinlabs/sumcoin_flutter\n/find searches cached official documents, not arbitrary websites.');
       if(name==='rules')return send(m,'Questions in your own language are welcome. Please keep discussion civil, never share recovery words or private keys, and avoid unsolicited financial offers. Official announcements may remain in English.');
@@ -289,12 +340,24 @@ ${ui(lang,'safety')}`);
         seenReplies.set(key,now()+86400000);if(seenReplies.size>1500)for(const [k,v] of seenReplies)if(v<now())seenReplies.delete(k);
         state.addFeedback(Number(m.reply_to_message.message_id));return send(m,'Feedback saved for administrator review. Only the bot reply ID was recorded; no member text.');
       }
-      if(['mode','stats','feedbacks','learn','review','approve','reject','teach','chatid'].includes(name)){
+      if(['mode','stats','feedbacks','learn','review','drafts','history','source','approve','reject','teach','chatid'].includes(name)){
         if(!group||!await admin(m))return send(m,'This command is restricted to authorized Sumcoin group administrators.');
         if(name==='stats')return send(m,state.summary());
         if(name==='feedbacks')return send(m,state.reports());
         if(name==='chatid')return send(m,`Group ID: ${m.chat.id}`);
-        if(name==='learn')return send(m,learning.stats());
+        if(name==='learn')return send(m,learning.stats()+'\nGroup index: '+JSON.stringify(groupIndex?.stats()||{}));
+        if(name==='history'){
+          if(!groupIndex)return send(m,'Group index disabled.');
+          if(!arg)return send(m,'Indexed group discussion (private VM): '+JSON.stringify(groupIndex.stats())+'\nUse /history keywords to search.');
+          const needle=arg.toLowerCase().slice(0,100);
+          const matches=groupIndex.data.entries.filter(x=>x.text.toLowerCase().includes(needle)).slice(-4).reverse();
+          return send(m,matches.length?matches.map(x=>`#${x.messageId} [${x.language}; ${x.kind}]: ${x.text.slice(0,220)}`).join('\n\n'):'No matching saved excerpts.');
+        }
+        if(name==='drafts')return send(m,learning.review());
+        if(name==='source'){
+          const match=arg.match(/^(\d+)\s*\|\s*(https:\/\/\S+)$/);
+          return send(m,match&&learning.setSource(Number(match[1]),match[2])?'Source attached to draft. Review with /drafts, then /approve ID.':'Usage: /source ID | https://sumcoin.org/official-page');
+        }
         if(name==='review')return send(m,learning.review());
         if(name==='mode'){
           if(!['reply','observe'].includes(arg))return send(m,'Usage: /mode observe OR /mode reply');
@@ -325,11 +388,7 @@ ${ui(lang,'safety')}`);
     const repliedToBot=m.reply_to_message?.from?.username?.toLowerCase()===botUsername.toLowerCase() && m.reply_to_message?.from?.is_bot===true;
     if(mention||repliedToBot){return ask(m,m.text.replace(new RegExp('@'+botUsername,'ig'),'').trim());}
     if(containsSecret(m.text))return;
-    // Learn admin answers only after the group admin was verified, and never auto-promote them.
-    if(m.reply_to_message?.text&&m.text.length>30&&await admin(m)){
-      const source=m.text.match(/https:\/\/(?:www\.)?(?:sumcoin\.org|sumcoinwallet\.org|sumcoinindex\.com|github\.com\/sumcoinlabs\/)[^\s]*/i)?.[0];
-      if(source&&isSupportMessage(m.reply_to_message.text))learning.queue(m.reply_to_message.text,m.text,source,'admin-reply');
-    }
+
     const standaloneConsensus=/^(?:is|does|did|was|can|will|what|how)\b/i.test(m.text.trim())&&consensusIntent(m.text);
     if(!isSupportMessage(m.text)&&!priceIntent(m.text)&&!standaloneConsensus)return;
     // Do not interrupt rhetorical, promotional, or off-topic Sumcoin chat.

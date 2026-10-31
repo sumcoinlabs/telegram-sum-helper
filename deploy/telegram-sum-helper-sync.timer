@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily Sumcoin Helper public knowledge synchronization
+[Timer]
+OnCalendar=*-*-* 03:40:00
+Persistent=true
+RandomizedDelaySec=900
+Unit=telegram-sum-helper-sync.service
+[Install]
+WantedBy=timers.target

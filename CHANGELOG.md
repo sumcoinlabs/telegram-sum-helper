@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.10 — 2026-10-31
+
+- Private bounded indexing of relevant *new* group messages, with 90-day/5000-excerpt limits, secret/PII filters, no Telegram member account identifiers, and `/privacy` and `/forget`.
+- Verified admin and explicitly allowlisted developer replies become source-required, human-reviewed draft knowledge; private `/drafts`, `/source`, `/approve`, `/reject`. Never promote unverified answers to facts.
+- Added Sumcoin Podcast 2 (22 chapters) and the July 8, 2024 founder update (8 chapters), both marked historical and unreviewed, with a `/podcast` excerpt lookup.
+- Added allowlisted GitHub docs discovery and attributed article headline/metadata index, plus three bundled news pointers, with public-only daily `sync:all` timer. Running bot refreshes external indexes without a restart.
+- Private VM `data/` remains excluded from Git; no automated uploads or pushes of group discussions. Preserved 14 native supported locales and Unicode search support; no claim of universal translation without an LLM.
+- Added regression tests and retained existing v0.0.9 behavioral coverage.
+
+
 ## 0.0.9 — 2026-10-31
 
 ### Improved

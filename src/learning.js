@@ -50,6 +50,7 @@ export class Learning {
   queue(q,a,source,kind='admin-reply'){
     const question=sanitizeQuestion(q);const answer=String(a||'').trim().slice(0,1300);
     if(!question||!answer||BANNED.test(answer))return null;
+    if(kind==='group-admin-draft'&&(this.data.pending.some(x=>x.kind===kind&&x.title===question&&x.text===answer)||this.data.approved.some(x=>x.kind===kind&&x.title===question&&x.text===answer)))return null;
     if(source && !ALLOWED_SOURCE.test(source))return null;
     const entry={id:this.data.nextId++,title:question,text:answer,source:source||null,created:this.now(),status:'pending',kind};
     this.data.pending.push(entry);this.save();return entry.id;
@@ -57,6 +58,14 @@ export class Learning {
   approve(id){const pos=this.data.pending.findIndex(x=>x.id===id);if(pos<0)return false;
     const item=this.data.pending[pos];if(!item.source)return false;this.data.pending.splice(pos,1);
     item.status='approved';item.sources=[item.source];item.tags=tokens(item.title);this.data.approved.push(item);this.data.approved=this.data.approved.slice(-100);this.save();return true;
+  }
+  setSource(id,source){
+    const item=this.data.pending.find(x=>x.id===Number(id));
+    if(!item||typeof source!=='string'||source.length>300||!ALLOWED_SOURCE.test(source))return false;
+    try{const u=new URL(source);if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash)return false;
+      if(u.hostname==='github.com'&&!u.pathname.startsWith('/sumcoinlabs/'))return false;
+    }catch{return false;}
+    item.source=source;this.save();return true;
   }
   reject(id){const prev=this.data.pending.length;this.data.pending=this.data.pending.filter(x=>x.id!==id);if(this.data.pending.length!==prev){this.save();return true;}return false;}
   stats(){const hot=Object.values(this.data.patterns).sort((a,b)=>b.count-a.count).slice(0,5);
