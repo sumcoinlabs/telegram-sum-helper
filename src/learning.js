@@ -6,7 +6,16 @@ import { normalize,tokens } from './knowledge.js';
 
 const DAYS_30=30*86400000;
 const BANNED=/(?:\b(?:seed|recovery|secret|mnemonic|private|password|passphrase|verification code|otp)\b|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b.*\b(?:seed|words)\b)/i;
-const ALLOWED_SOURCE=/^https:\/\/(?:www\.)?(?:sumcoin\.org|sumcoinwallet\.org|sumcoinindex\.com|github\.com\/sumcoinlabs\/|docs\.sumcoin\.org\/)/i;
+export function isOfficialSource(source){
+  if(typeof source!=='string'||source.length>300)return false;
+  try{
+    const u=new URL(source);
+    if(u.protocol!=='https:'||u.username||u.password||u.port||u.search||u.hash)return false;
+    if(u.hostname==='github.com')return /^\/sumcoinlabs\/[a-z0-9_.-]+(?:\/|$)/i.test(u.pathname);
+    return ['sumcoin.org','www.sumcoin.org','sumcoinwallet.org','www.sumcoinwallet.org','sumcoinindex.com','www.sumcoinindex.com','docs.sumcoin.org'].includes(u.hostname);
+  }catch{return false;}
+}
+
 export function sanitizeQuestion(input){
   const s=String(input||'').slice(0,600).trim();
   if(s.length<10 || BANNED.test(s) || !safeForLearning(s) || /https?:\/\/|t\.me\/|@\w+/.test(s))return null;
@@ -52,22 +61,22 @@ export class Learning {
     const question=sanitizeQuestion(q);const answer=String(a||'').trim().slice(0,1300);
     if(!question||!answer||BANNED.test(answer))return null;
     if(kind==='group-admin-draft'&&(this.data.pending.some(x=>x.kind===kind&&x.title===question&&x.text===answer)||this.data.approved.some(x=>x.kind===kind&&x.title===question&&x.text===answer)))return null;
-    if(source && !ALLOWED_SOURCE.test(source))return null;
+    if(source && !isOfficialSource(source))return null;
     const entry={id:this.data.nextId++,title:question,text:answer,source:source||null,created:this.now(),status:'pending',kind};
+    if(/^correction:[a-z0-9-]{2,60}$/.test(kind))entry.supersedesId=kind.slice(11);
     this.data.pending.push(entry);this.save();return entry.id;
   }
   approve(id){const pos=this.data.pending.findIndex(x=>x.id===id);if(pos<0)return false;
-    const item=this.data.pending[pos];if(!item.source)return false;this.data.pending.splice(pos,1);
+    const item=this.data.pending[pos];if(!isOfficialSource(item.source))return false;this.data.pending.splice(pos,1);
+    if(item.supersedesId)this.data.approved=this.data.approved.filter(x=>x.supersedesId!==item.supersedesId);
     item.status='approved';item.sources=[item.source];item.tags=tokens(item.title);this.data.approved.push(item);this.data.approved=this.data.approved.slice(-100);this.save();return true;
   }
   setSource(id,source){
     const item=this.data.pending.find(x=>x.id===Number(id));
-    if(!item||typeof source!=='string'||source.length>300||!ALLOWED_SOURCE.test(source))return false;
-    try{const u=new URL(source);if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash)return false;
-      if(u.hostname==='github.com'&&!u.pathname.startsWith('/sumcoinlabs/'))return false;
-    }catch{return false;}
+    if(!item||!isOfficialSource(source))return false;
     item.source=source;this.save();return true;
   }
+  revoke(id){const before=this.data.approved.length;this.data.approved=this.data.approved.filter(x=>x.id!==Number(id));if(before===this.data.approved.length)return false;this.save();return true;}
   reject(id){const prev=this.data.pending.length;this.data.pending=this.data.pending.filter(x=>x.id!==id);if(this.data.pending.length!==prev){this.save();return true;}return false;}
   stats(){const hot=Object.values(this.data.patterns).sort((a,b)=>b.count-a.count).slice(0,5);
     return `Learned question patterns: ${Object.keys(this.data.patterns).length} (historical: ${Object.values(this.data.patterns).filter(p=>p.historical).length})\nPending moderator-reviewed answers: ${this.data.pending.length}\nApproved answers: ${this.data.approved.length}\nRepeated patterns (redacted):\n${hot.map(x=>`${x.count}× [${x.language||'?'} / ${x.topic||'unclassified'}] ${x.example||'(no text stored)'}`).join('\n')||'(none)'}`;

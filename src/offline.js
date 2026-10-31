@@ -101,6 +101,7 @@ const ADDITIONS = {
 };
 function labels(lang){return LABELS[lang]||LABELS.en;}
 export function reviewedFact(article,lang){
+  if(article?.kind==='admin-approved'&&article.supersedesId)return lang==='en'?(article.body||article.text):null;
   if(lang==='en')return article.body||article.text;
   if(lang==='pt'&&PT[article.id])return PT[article.id];
   if(lang==='es'&&ES[article.id])return ES[article.id];

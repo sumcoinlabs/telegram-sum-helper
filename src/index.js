@@ -9,14 +9,14 @@ import { GroupIndex } from './group-index.js';
 import { VERSION } from './version.js';
 
 const token=process.env.TELEGRAM_BOT_TOKEN?.trim();
-const config={allowedChatUsername:(process.env.ALLOWED_CHAT_USERNAME||'').trim().replace(/^@/,''),allowedChatId:process.env.ALLOWED_CHAT_ID||'',initialMode:process.env.INITIAL_MODE||'observe',userCooldownHours:Number(process.env.USER_COOLDOWN_HOURS||6),topicCooldownSeconds:Number(process.env.TOPIC_COOLDOWN_SECONDS||120),autoAI:process.env.AUTO_AI==='true',groupIndexEnabled:process.env.GROUP_INDEX_ENABLED!=='false',learningEnabled:process.env.LEARNING_ENABLED!=='false',trustedDeveloperIds:(process.env.TRUSTED_DEVELOPER_IDS||'').split(',').map(v=>v.trim()).filter(v=>/^\d{2,20}$/.test(v)).map(Number),allowPrivateChats:process.env.ALLOW_PRIVATE_CHATS==='true',aiDailyLimit:Number(process.env.AI_DAILY_LIMIT||100)};
+const config={aiEnabled:process.env.AI_ENABLED==='true',aiHourlyLimit:Number(process.env.AI_HOURLY_LIMIT??4),aiMonthlyLimit:Number(process.env.AI_MONTHLY_LIMIT??60),weeklyReportEnabled:process.env.WEEKLY_REPORT_ENABLED==='true',allowedChatUsername:(process.env.ALLOWED_CHAT_USERNAME||'').trim().replace(/^@/,''),allowedChatId:process.env.ALLOWED_CHAT_ID||'',initialMode:process.env.INITIAL_MODE||'observe',userCooldownHours:Number(process.env.USER_COOLDOWN_HOURS||6),topicCooldownSeconds:Number(process.env.TOPIC_COOLDOWN_SECONDS||120),autoAI:process.env.AUTO_AI==='true',groupIndexEnabled:process.env.GROUP_INDEX_ENABLED!=='false',learningEnabled:process.env.LEARNING_ENABLED!=='false',trustedDeveloperIds:(process.env.TRUSTED_DEVELOPER_IDS||'').split(',').map(v=>v.trim()).filter(v=>/^\d{2,20}$/.test(v)).map(Number),allowPrivateChats:process.env.ALLOW_PRIVATE_CHATS==='true',aiDailyLimit:Number(process.env.AI_DAILY_LIMIT??12)};
 if(!token||!/^[0-9]+:[\w-]{30,}$/.test(token))throw new Error('Missing/invalid TELEGRAM_BOT_TOKEN.');
 if(!config.allowedChatUsername&&!config.allowedChatId)throw new Error('Set an allowed group ID or username.');
-if(!['observe','reply'].includes(config.initialMode)||![config.userCooldownHours,config.topicCooldownSeconds,config.aiDailyLimit].every(v=>Number.isFinite(v)&&v>=0))throw new Error('Invalid moderation settings.');
+if(!['observe','reply'].includes(config.initialMode)||![config.userCooldownHours,config.topicCooldownSeconds,config.aiDailyLimit,config.aiHourlyLimit,config.aiMonthlyLimit].every(v=>Number.isFinite(v)&&v>=0))throw new Error('Invalid moderation settings.');
 const state=new State(process.env.STATE_FILE||'./data/state.json',config.initialMode);
 const learning=new Learning();
 const knowledge=new Knowledge({learned:learning.data.approved});
-const ai=new ConversationAI({apiKey:process.env.OPENAI_API_KEY||'',model:process.env.OPENAI_MODEL||'gpt-4.1-mini'});
+const ai=new ConversationAI({apiKey:config.aiEnabled?(process.env.OPENAI_API_KEY||''):'',model:process.env.OPENAI_MODEL||'gpt-6-luna'});
 const client=new TelegramClient(token);
 const me=await client.getMe();
 if(!me.can_read_all_group_messages)console.warn('Bot privacy may prevent free-form group messages unless the bot is a group administrator. See README auto-support setup.');

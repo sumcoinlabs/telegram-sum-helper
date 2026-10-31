@@ -8,14 +8,15 @@ export class State {
     this.file = file;
     this.now = now;
     this.cooldowns = new Map(); // in-memory only; never written to disk
-    this.data = { mode: initialMode, detected: {}, answered: {}, days: {}, languages: {}, feedback: 0, feedbackItems: [], aiRequests: {} };
+    this.data = { mode: initialMode, detected: {}, answered: {}, days: {}, languages: {}, feedback: 0, feedbackItems: [], aiRequests: {}, aiHours: {}, aiMonths: {}, outcomes: {}, weeklySent: null };
     try {
       const loaded = JSON.parse(fs.readFileSync(file, 'utf8'));
       if (['reply', 'observe'].includes(loaded.mode)) this.data.mode = loaded.mode;
-      for (const key of ['detected', 'answered', 'days', 'languages', 'aiRequests']) {
+      for (const key of ['detected', 'answered', 'days', 'languages', 'aiRequests', 'aiHours', 'aiMonths', 'outcomes']) {
         if (loaded[key] && typeof loaded[key] === 'object' && !Array.isArray(loaded[key])) this.data[key] = loaded[key];
       }
       if(Array.isArray(loaded.feedbackItems))this.data.feedbackItems=loaded.feedbackItems.slice(-100);
+      if(typeof loaded.weeklySent==='string')this.data.weeklySent=loaded.weeklySent;
       if(Number.isFinite(Number(loaded.feedback)))this.data.feedback=Math.max(0,Number(loaded.feedback));
     } catch (err) {
       if (err.code !== 'ENOENT') throw err;
@@ -68,19 +69,44 @@ export class State {
   }
 
   addFeedback(botMessageId){
-    this.data.feedback++;
+    this.data.feedback++;this.noteOutcome('feedback');
     if(Number.isSafeInteger(botMessageId)&&botMessageId>0){this.data.feedbackItems.push({messageId:botMessageId,at:this.now()});
       this.data.feedbackItems=this.data.feedbackItems.filter(x=>this.now()-x.at<30*86400000).slice(-100);}
     this.save();
   }
   reports(){return this.data.feedbackItems.slice(-15).reverse().map(r=>`Bot message #${r.messageId} (${new Date(r.at).toISOString().slice(0,10)})`).join('\n')||'No recent feedback entries.';}
 
-  consumeAiQuota(limit){
+  consumeAiQuota(limit, hourlyLimit=4, monthlyLimit=60){
+    // All caps are enforced locally BEFORE an API call. Billing/account-level
+    // limits must also be configured separately; token costs vary per request.
+    const iso=new Date(this.now()).toISOString(),day=iso.slice(0,10),hour=iso.slice(0,13),month=iso.slice(0,7);
+    if(![limit,hourlyLimit,monthlyLimit].every(x=>Number.isInteger(x)&&x>0))return false;
+    this.data.aiRequests=Object.fromEntries(Object.entries(this.data.aiRequests).filter(([d])=>d===day));
+    this.data.aiHours=Object.fromEntries(Object.entries(this.data.aiHours).filter(([h])=>h===hour));
+    this.data.aiMonths=Object.fromEntries(Object.entries(this.data.aiMonths).filter(([m])=>m===month));
+    if((this.data.aiRequests[day]||0)>=limit || (this.data.aiHours[hour]||0)>=hourlyLimit || (this.data.aiMonths[month]||0)>=monthlyLimit)return false;
+    this.data.aiRequests[day]=(this.data.aiRequests[day]||0)+1;
+    this.data.aiHours[hour]=(this.data.aiHours[hour]||0)+1;
+    this.data.aiMonths[month]=(this.data.aiMonths[month]||0)+1;
+    this.save();return true;
+  }
+
+  noteOutcome(kind){
+    if(!['answered','ai','offline','escalated','correction','feedback'].includes(kind))return;
     const day=new Date(this.now()).toISOString().slice(0,10);
-    this.data.aiRequests=Object.fromEntries(Object.entries(this.data.aiRequests).filter(([d])=>d>=day));
-    const count=Number(this.data.aiRequests[day]||0);
-    if(count>=limit)return false;
-    this.data.aiRequests[day]=count+1;this.save();return true;
+    const row=this.data.outcomes[day]||={};row[kind]=(row[kind]||0)+1;
+    this.data.outcomes[day]=row;
+    for(const d of Object.keys(this.data.outcomes).sort().slice(0,-45))delete this.data.outcomes[d];
+    this.save();
+  }
+
+  weeklyReport(){
+    const to=new Date(this.now());const weekAgo=new Date(to.getTime()-7*86400000).toISOString().slice(0,10);
+    const records=Object.entries(this.data.outcomes).filter(([day])=>day>=weekAgo);
+    const totals={};for(const [,row] of records)for(const [kind,n] of Object.entries(row))totals[kind]=(totals[kind]||0)+n;
+    const topics=Object.create(null);for(const [day,bucket] of Object.entries(this.data.days))if(day>=weekAgo)for(const [topic,n] of Object.entries(bucket.detected||{}))topics[topic]=(topics[topic]||0)+n;
+    const top=Object.entries(topics).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,n])=>`${k} ${n}`).join(', ');
+    return `Sumcoin Helper weekly quality report (last 7 days, UTC)\nAnswers delivered: ${totals.answered||0}\nAI-assisted: ${totals.ai||0}\nOffline / reviewed answers: ${totals.offline||0}\nEscalated: ${totals.escalated||0}\nCorrections approved: ${totals.correction||0}\nFeedback received: ${totals.feedback||0}\nCommon recognized subjects: ${top||'none'}\nNo personal messages or identities included.`;
   }
 
   summary() {

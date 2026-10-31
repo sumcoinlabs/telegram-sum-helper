@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.0.14 — code-first intelligence and guarded conversational mode
+
+- Project code and reviewed current facts remain primary; historical and unreviewed sources stay nonauthoritative.
+- Optional OpenAI reasoning is opt-in with hourly, daily and monthly request ceilings, plus automatic no-key, budget-exhaustion and API-error fallback. No guarantee of zero API charges.
+- Added source-linked, approval-required admin corrections, reversible with `/revoke`, and seven-day privacy-preserving `/weekly` quality reporting.
+- Added an opt-in weekly admin DM after verifying administrator role; no raw group messages are reported.
+- Kept the v0.0.13 historical import stream unchanged and idempotent, so the 743 patterns can be installed privately when the user runs it.
+
+
 ## 0.0.13 — 2026-10-31
 
 - Fail closed for privileged group commands when Telegram administrator verification fails, while still suppressing uncertain automatic replies (prevents accidental privilege escalation during API outages).

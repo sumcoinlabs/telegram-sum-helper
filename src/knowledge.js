@@ -54,8 +54,10 @@ export class Knowledge {
     }
   }
   documents() {
-    const primary = this.curated.map(a=>({...a,kind:'curated',body:a.text}));
-    const learned = this.learned.filter(a=>a.status==='approved').map(a=>({...a,kind:'admin-approved',body:a.text}));
+    const active=this.learned.filter(a=>a.status==='approved');
+    const overrides=new Set(active.map(a=>a.supersedesId).filter(Boolean));
+    const primary = this.curated.filter(a=>!overrides.has(a.id)).map(a=>({...a,kind:'curated',body:a.text}));
+    const learned = active.map(a=>({...a,id:a.supersedesId||a.id,kind:'admin-approved',body:a.text}));
     const synced = this.synced.filter(a=>a.source&&a.text).map(a=>({...a,kind:'synced',body:a.text}));
     const videos=this.videos.filter(a=>a.source&&a.text).map(a=>({...a,kind:'video',body:a.text}));
     const podcasts=this.podcasts.filter(a=>a.source&&a.text).map(a=>({...a,kind:'podcast',body:a.text}));

@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml/badge.svg"></a>
-  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/releases/tag/v0.0.13"><img alt="Version 0.0.12" src="https://img.shields.io/badge/version-0.0.13-blue"></a>
+  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.14"><img alt="Version 0.0.14" src="https://img.shields.io/badge/version-0.0.14-blue"></a>
   <img alt="Node.js 20.11 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20.11-339933?logo=nodedotjs&logoColor=white">
   <img alt="14 supported locales" src="https://img.shields.io/badge/locales-14-0A73B7">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green"></a>
@@ -26,7 +26,8 @@
 - **Live SUM reference rates:** Currency names and codes (including yen/JPY); public read-only blockchain lookup via `/tx` and `/address`.
 - **Verified knowledge:** Reviewed FAQs, official documentation, dated podcast transcripts, project updates, public GitHub documentation, news references, and optional X archives. Unreviewed sources are not automatically treated as current facts.
 - **Ongoing learning:** Privacy-filtered *new* group excerpts are stored on the VM; verified admin/developer answers become drafts until explicitly sourced and approved.
-- **Free offline answering:** The OpenAI API is optional; without a key answers use reviewed retrieval, not open-ended generation.
+- **Code-first, budget-safe answers:** Verified facts remain authoritative. Optional conversational OpenAI API calls are **disabled by default** and capped hourly/daily/monthly; fallback is free.
+- **Reviewed corrections and reporting:** Admin `/correct` (reply to bot), `/approve`, `/revoke`, and `/weekly` provide an auditable learning cycle.
 
 ## Install or update
 
@@ -55,7 +56,7 @@ systemctl --user restart telegram-sum-helper.service
 | `/tx TXID` · `/address PUBLIC_ADDRESS` | Read-only blockchain checks |
 | `/find QUERY` · `/podcast QUERY` · `/news` | Search source material |
 | `/stop` · `/resume` · `/privacy` | Control automatic replies and see data policy |
-| `/mode reply` · `/status` · `/drafts` | Group-admin controls and diagnostics |
+| `/mode reply` · `/status` · `/weekly` · `/correct` · `/drafts` | Group-admin controls and diagnostics |
 
 ## Data and trust
 

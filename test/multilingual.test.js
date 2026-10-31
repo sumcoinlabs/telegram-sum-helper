@@ -94,6 +94,6 @@ test('daily AI request quota enforced for outbound model calls',async()=>{
  try{
   for(let i=0;i<3;i++)await f.handler(f.message(i+1,'/ask How can I withdraw USD from Sumcoin wallet?',{from:{id:100+i,language_code:'en'}}));
   assert.equal(f.state.data.aiRequests[new Date().toISOString().slice(0,10)],2);
-  assert.match(f.sent[2],/AI daily limit reached/);
+  assert.match(f.sent[2],/Source:/);
  }finally{f.clean();}
 });
