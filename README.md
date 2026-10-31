@@ -1,6 +1,33 @@
 # Telegram Sum Helper
 
-**v0.0.8 — natural-language, free Sumcoin community support with human review.**
+**v0.0.9 — natural-language reliability, expanded current FAQs, podcast context, and safe X archive intake.**
+
+## What's new in v0.0.9
+
+- **Natural price requests work without commands.** The bot recognizes “What is the Sumcoin price in yen?”, “How much is 5 SUM in Japanese yen?”, “Sumcoin price in Canadian dollars”, and other direct currency requests. Specific currency words override Telegram UI defaults. Numeric values come from the approved `rate.slicewallet.org` feed; if the exact currency is not present it says so, not an invented FX conversion. A SUM quantity (such as 5 SUM) scales the returned per-SUM reference rate.
+- **Direct PoW/PoS answers.** Questions such as “Is Sumcoin proof of work?” answer that Sumcoin began with proof-of-work and currently uses proof-of-stake, citing official information rather than escalating to the admin. Migration requests still go through their separate support path.
+- **Fewer silently dropped replies.** Auto-price and consensus questions use short per-member/currency cooldowns instead of a shared group-wide cooldown that dropped another member's legitimate question. Explicit `/ask` follow-ups are no longer hidden by the old eight-second suppression. The Telegram API client still paces sends to respect actual Telegram rate limits.
+- **Less chatter interruption.** Rhetorical comments and common greetings do not trigger an answer merely because they mention Sumcoin. Admins continue to be ignored automatically; direct `/ask` remains available. Member dismissal and `@SumcoinAdmin` review remain intact.
+- **Podcast 1 included.** The complete supplied transcript was cleaned into **eight attributed chapter excerpts** in `knowledge/podcast-1.json`, with source `https://www.youtube.com/watch?v=_dq55ykFDHs`. These are discoverable, **unreviewed** source material—not automatically promoted to verified network facts. In particular, a podcast suggestion that PoS was present from the beginning conflicts with verified PoW-to-PoS history.
+- **Expanded reviewed FAQs.** 57 reviewed topics, including present-day consensus, requesting rates by currency, migration eligibility/questions, the podcast's provenance, and social-media evidence. The `language` FAQ now accurately welcomes questions in all supported languages.
+- **X archive importer.** `npm run import:social` accepts user-supplied X `tweets.js`, `tweet.js`, JSON arrays, or compatible post records. Supports multiple files and archival directories, deduplicates, filters unrelated `$SUM`, limits documents, and never promotes posts into official technical claims.
+
+### Bringing in the full `@SumcoinIndex` X history
+
+This release does **not** claim to have fetched all tweets from X; unauthenticated web search returns incomplete results and `$SUM` is ambiguous. If you control `@SumcoinIndex`, obtain your account's X archive and supply the archive's `tweets.js` file(s). For a single file or multiple parts transferred onto the existing VM:
+
+```bash
+cd /home/electrumbtc1/telegram-sum-helper
+npm run import:social -- /home/electrumbtc1/tweets.js --account sumcoinindex
+# or: npm run import:social -- /home/electrumbtc1/x-archive/data/ --account sumcoinindex
+systemctl --user restart telegram-sum-helper.service
+```
+
+For community posts, prepare a JSON array of `{ "author":"handle", "text":"#Sumcoin ...", "url":"https://x.com/handle/status/1234567890123456789" }` with the genuine source URLs, and omit `--account`. Only posts with an actual Sumcoin reference and an attributable X status URL are indexed. The importer avoids duplicate source URLs and stores its data privately in `data/social-posts.json` (not GitHub). For a complete public-hashtag history, a legitimate X search/export/API source is required; no background scraping or paid API is enabled.
+
+**Provenance:** Social posts and podcast chapters are discoverable in `/find` but never independently accepted as current protocol rules. Human-verified curated facts take precedence. Historical, speculative, or promotional claims are not automatically treated as true.
+
+---
 
 The bot now assists ordinary group conversations without requiring `/ask`. It answers recognized Sumcoin support questions using reviewed sources, avoids administrator messages and ordinary chat, and sends unfamiliar questions to a verified `@SumcoinAdmin` account for private review. It remains a **retrieval-based help system, not a trained LLM**. OpenAI remains completely optional. The existing 14-language UI, P2P rates, read-only blockchain lookups, and historical-data safeguards are retained.
 

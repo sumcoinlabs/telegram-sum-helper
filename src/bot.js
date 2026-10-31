@@ -9,6 +9,7 @@ import { livePrice,liveTransaction,liveAddress } from './live.js';
 import {ui,preferredCurrency} from './locale-ui.js';
 import {needsHumanReview,isDismissal,REVIEW_USERNAME} from './escalations.js';
 import {supportUI} from './support-ui.js';
+import {priceIntent,consensusIntent,consensusReply} from './intent.js';
 
 export function isCurrentPriceQuestion(q){
   const text=String(q||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').normalize('NFC');
@@ -19,7 +20,7 @@ export function isCurrentPriceQuestion(q){
   return when.test(text)&&price.test(text)&&!calculation.test(text);
 }
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
-const HELP=`Sumcoin Helper v0.0.8 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
+const HELP=`Sumcoin Helper v0.0.9 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
 /currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n/stop — pause automatic help for 24 hours; /resume — turn it on again\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid, /queue\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
 export function commandFrom(text,botUsername=''){
   const m=/^\/([a-z_]+)(?:@([a-z0-9_]+))?(?:\s+([\s\S]*))?$/i.exec(String(text||'').trim());
@@ -52,7 +53,7 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     if(cached&&cached.until>now())return cached.value;
     try{
       const isAdmin=['administrator','creator'].includes((await client.getChatMember(m.chat.id,m.from.id))?.status);
-      adminCache.set(key,{value:isAdmin,until:now()+120_000});return isAdmin;
+      adminCache.set(key,{value:isAdmin,until:now()+10_000});return isAdmin;
     }catch{return true;} // On verification failure, do NOT autorespond to a possible administrator.
   }
   async function reviewer(m){
@@ -147,8 +148,10 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     const contextId=!detected&&prior&&isContextualFollowup(q)?prior.id:null;
     const pref=preferences.get(String(m.from?.id||''));
     if((contextId||expanded)&&prior?.lang&&!(pref?.until>now()))lang=prior.lang;
-    if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?config.userCooldownHours:0,automatic?config.topicCooldownSeconds:8))return;
-    if(isCurrentPriceQuestion(q))return send(m,await liveOps.price(priceOptions(m,lang)));
+    if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?config.userCooldownHours:0,automatic?config.topicCooldownSeconds:0))return;
+    const pricing=priceIntent(q);
+    if(pricing)return send(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}));
+    if(consensusIntent(q))return send(m,consensusReply(lang));
     const retrievalQuery=ai.apiKey?ai.retrievalQuestion(key,q):q;
     const docs=knowledge.search(contextId?knowledge.find(contextId)?.title||q:retrievalQuery,{limit:12});
     if(escalations&&!automatic&&inAllowedGroup(m.chat,config)&&!await admin(m)&&
@@ -327,7 +330,10 @@ ${ui(lang,'safety')}`);
       const source=m.text.match(/https:\/\/(?:www\.)?(?:sumcoin\.org|sumcoinwallet\.org|sumcoinindex\.com|github\.com\/sumcoinlabs\/)[^\s]*/i)?.[0];
       if(source&&isSupportMessage(m.reply_to_message.text))learning.queue(m.reply_to_message.text,m.text,source,'admin-reply');
     }
-    if(!isSupportMessage(m.text))return;
+    const standaloneConsensus=/^(?:is|does|did|was|can|will|what|how)\b/i.test(m.text.trim())&&consensusIntent(m.text);
+    if(!isSupportMessage(m.text)&&!priceIntent(m.text)&&!standaloneConsensus)return;
+    // Do not interrupt rhetorical, promotional, or off-topic Sumcoin chat.
+    if(/^(?:do you (?:like|love)|who else (?:likes|loves)|isn't it (?:great|awesome)|sumcoin (?:to the moon|is awesome)|hey guys|good morning)\b/i.test(m.text.trim()))return;
     // No automatic messages to admins, anonymous admins, channel posts or opted-out members.
     if(m.sender_chat||await admin(m)||isMuted(m))return;
     const {topic,language}=classify(m.text,m.from?.language_code);
@@ -335,8 +341,13 @@ ${ui(lang,'safety')}`);
     if(topic)state.record(topic,false);
     state.recordLanguage(language);
     if(state.data.mode!=='reply')return;
-    if(isCurrentPriceQuestion(m.text)){
-      if(state.shouldReply(m,'auto:live-price',0.015,4))await send(m,await liveOps.price(priceOptions(m,languageFor(m,m.text))));
+    const pricing=priceIntent(m.text);
+    if(pricing){
+      if(state.shouldReply(m,`auto:live-price:${pricing.currency||'auto'}:${m.from?.id}`,0.00056,0))await send(m,await liveOps.price({...priceOptions(m,languageFor(m,m.text),pricing.currency||''),amount:pricing.amount}));
+      return;
+    }
+    if(consensusIntent(m.text)){
+      if(state.shouldReply(m,`auto:consensus:${m.from?.id}`,0.00056,0))await send(m,consensusReply(languageFor(m,m.text)));
       return;
     }
     const detected=topic||learning.learnedTopic(m.text);
@@ -345,9 +356,8 @@ ${ui(lang,'safety')}`);
     const recognized=detected&&knowledge.find(detected)?detected:topReviewed?.score>=18&&topReviewed?.coverage>=0.48?topReviewed.id:null;
     if(recognized&&!needsHumanReview(m.text)){
       // Short per-user / per-group cooldown rather than blocking support for six hours.
-      if(!state.shouldReply(m,`auto:${recognized}`,0.015,4))return;
-      if(isCurrentPriceQuestion(m.text))await send(m,await liveOps.price(priceOptions(m,languageFor(m,m.text))));
-      else await send(m,article(recognized,languageFor(m,m.text)));
+      if(!state.shouldReply(m,`auto:${recognized}:${m.from?.id}`,0.0015,0))return;
+      await send(m,article(recognized,languageFor(m,m.text)));
       state.record(recognized,true);return;
     }
     if(!escalations)return;

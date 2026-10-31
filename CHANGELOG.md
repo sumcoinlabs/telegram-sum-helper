@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.9 — 2026-10-31
+
+### Improved
+- Resolve natural-language SUM reference rate questions in requested currencies (JPY/yen, EUR, BRL, MXN, CAD, etc.); support quantities while preserving API source and reference-rate distinction.
+- Answer current Sumcoin proof-of-work / proof-of-stake questions without unnecessary @SumcoinAdmin escalation, in 14 languages; keep migration and historical network questions distinct.
+- Reduce incorrect silence from shared/group-wide price cooldowns and repeated explicit commands, while retaining Telegram outbound pacing and member opt-out.
+- Keep admins excluded from unsolicited replies; avoid common casual/rhetorical messages.
+- Expand curated knowledge from 52 to 57 topics and clarify the currently published migration service fee tiers as official program terms subject to eligibility.
+
+### Sources
+- Include the eight-chapter, user-provided Sumcoin Podcast 1 transcript as attributed, unreviewed data. Flag podcast claims that conflict with current network history.
+- Introduce private X/Twitter archive importer for @SumcoinIndex or attributed community posts with source URL validation and relevance filtering. Unreviewed social posts are **not** automatically factual answers.
+- No claim of full historical X coverage without an authorized export or API. No paid social API or LLM.
+
+### Validation
+- 138/138 automated tests, including regression tests for natural language currencies, consensus history, source provenance and safe review handling.
+
 ## 0.0.8 — 2026-10-31
 
 - Natural-language support in the authorized Sumcoin group, enabled deliberately by `/mode reply`, not by installation.

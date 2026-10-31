@@ -18,7 +18,7 @@ const ai=new ConversationAI({apiKey:process.env.OPENAI_API_KEY||'',model:process
 const client=new TelegramClient(token);
 const me=await client.getMe();
 if(!me.can_read_all_group_messages)console.warn('Bot privacy may prevent free-form group messages unless the bot is a group administrator. See README auto-support setup.');
-console.log(`Sumcoin Helper v0.0.8: @${me.username} | authorized group ${config.allowedChatUsername||config.allowedChatId} | mode ${state.data.mode} | ${knowledge.documents().length} knowledge entries | AI ${ai.apiKey?'configured':'retrieval-only'}`);
+console.log(`Sumcoin Helper v0.0.9: @${me.username} | authorized group ${config.allowedChatUsername||config.allowedChatId} | mode ${state.data.mode} | ${knowledge.documents().length} knowledge entries | AI ${ai.apiKey?'configured':'retrieval-only'}`);
 await client.deleteWebhook();
 try{await client.setMyCommands();}catch(e){console.error('Optional command menu failed:',e.message);}
 for(const language of ['es','pt','fr','de','it','ru','zh','ar','hi','ja','ko','tr','id']){try{await client.setMyCommands(language);}catch(e){console.error(`Optional ${language} command menu failed:`,e.message);}}

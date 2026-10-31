@@ -348,9 +348,13 @@
         "espanol",
         "translation",
         "translate",
-        "group rules"
+        "group rules",
+        "multilingual",
+        "14 languages",
+        "ask normally",
+        "native language"
       ],
-      "text": "This Sumcoin Telegram group uses English for discussion. If your question is in another language, please translate it to English so members can assist. The bot can still provide a basic safety message in Spanish where appropriate.",
+      "text": "This Sumcoin Telegram group welcomes questions in members’ own languages. Sumcoin Helper provides core help in 14 languages, including English, Spanish and Portuguese, without requiring command syntax. If the bot does not recognize a question it can refer it to the group administrator for review.",
       "sources": [
         "https://t.me/sumcoins"
       ]
@@ -618,9 +622,15 @@
         "migration cost",
         "migration fee",
         "eligibility",
-        "manual review"
+        "manual review",
+        "how many dollars",
+        "500 dollar",
+        "1500 dollar",
+        "250 sum",
+        "1000 sum",
+        "published processing tiers"
       ],
-      "text": "Migration rules and costs may change, so the bot must not quote a fixed current fee or promise a conversion. Read the current official migration terms and verify requests through trusted project channels. Nobody in a Telegram DM should require your seed phrase to process eligibility.",
+      "text": "The official Sumcoin migration page publishes a USA launch-phase plan for some legacy PoW holdings, with a 1,000 SUM per-person maximum, a $500 base processing/service tier for up to 250 SUM, and a $1,500 VIP option for up to 1,000 SUM. These are published program terms, not a live personalized eligibility confirmation: the page has separate steps and conditions that need checking before payment or migration. Confirm the current terms and the authorized process on the official site; do not send recovery words to anyone.",
       "sources": [
         "https://www.sumcoin.org/migrations/"
       ]
@@ -914,6 +924,105 @@
       "text": "Yes, if a trustworthy transcript is supplied. The transcript can be indexed with attribution and is marked unreviewed until an administrator verifies technical statements. The bot does not assume every video statement is a current network rule; older video claims must be checked against current software and official documentation.",
       "sources": [
         "https://github.com/sumcoinlabs/telegram-sum-helper"
+      ]
+    },
+    {
+      "id": "current-consensus",
+      "title": "Is Sumcoin Proof of Work or Proof of Stake today?",
+      "tags": [
+        "proof of work",
+        "pow",
+        "proof of stake",
+        "pos",
+        "mining",
+        "consensus",
+        "is it mineable",
+        "network now",
+        "staking network"
+      ],
+      "text": "Sumcoin initially used proof-of-work (PoW), and its current network operates using proof-of-stake (PoS). The PoW mining documentation describes an earlier phase. Staking details are based on compatible current Sumcoin Core software.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://github.com/sumcoinlabs/sumcoin"
+      ]
+    },
+    {
+      "id": "price-currencies",
+      "title": "Can I get the Sumcoin price in yen, euros or local currencies?",
+      "tags": [
+        "yen",
+        "jpy",
+        "yapanese yen",
+        "japanese yen",
+        "euro",
+        "eur",
+        "reais",
+        "brl",
+        "peso",
+        "mxn",
+        "price in",
+        "quote in",
+        "local currency",
+        "how much is 1 sum"
+      ],
+      "text": "Sumcoin Helper can retrieve the live Sumcoin peer-to-peer index reference rate in any currency explicitly supplied by the official rates API. For example, you can ask “Sumcoin price in yen?” or use /price JPY. Country and interface language only supply defaults; an explicitly requested currency wins.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://rate.slicewallet.org/api/rates"
+      ]
+    },
+    {
+      "id": "migration-questions",
+      "title": "What information is needed before asking about migration fees?",
+      "tags": [
+        "migrate old sum",
+        "legacy migration price",
+        "fee for migration",
+        "migration eligibility",
+        "migration payment",
+        "old slice wallet"
+      ],
+      "text": "To determine possible legacy PoW migration costs, first check which wallet and chain contain your holdings, how much SUM is eligible, and the currently published official migration program. Published USA launch-phase processing tiers include $500 for up to 250 SUM and $1,500 for up to 1,000 SUM, subject to program terms. Do not assume every balance qualifies.",
+      "sources": [
+        "https://www.sumcoin.org/migrations/"
+      ]
+    },
+    {
+      "id": "podcast-provenance",
+      "title": "What does Sumcoin Podcast episode 1 discuss?",
+      "tags": [
+        "podcast",
+        "podcast episode 1",
+        "youtube",
+        "elon musk",
+        "energy",
+        "sigma",
+        "hurricane",
+        "proof of stake explained"
+      ],
+      "text": "Sumcoin Podcast 1 discusses the project’s index model, PoW versus PoS energy use, direct wallet-to-wallet transfers, possible future applications and its Sigma logo. It includes speculation, estimates and an inaccurate suggestion that PoS was used from the start. Those podcast statements are commentary, not independent verification of current technical specifications.",
+      "sources": [
+        "https://www.youtube.com/watch?v=_dq55ykFDHs",
+        "https://www.sumcoin.org/about/"
+      ]
+    },
+    {
+      "id": "social-provenance",
+      "title": "Are all posts mentioning #Sumcoin or $SUM official?",
+      "tags": [
+        "twitter",
+        "tweets",
+        "x posts",
+        "@sumcoinindex",
+        "#sumcoin",
+        "$sum",
+        "social media",
+        "verified source"
+      ],
+      "text": "The @SumcoinIndex account publishes project statements on X. Posts by other accounts can contain discussion, speculation or misinformation. The symbol $SUM is used in unrelated contexts, so a post without an explicit Sumcoin reference must not be indexed as Sumcoin evidence. Official account posts are historical statements unless corroborated with current official code and policy.",
+      "sources": [
+        "https://www.sumcoin.org/about/",
+        "https://x.com/sumcoinindex"
       ]
     }
   ]

@@ -76,7 +76,7 @@ function failure(lang,kind,reason,link){
     `${kind} no está disponible temporalmente (${reason}). Consulta la fuente oficial: ${link}`,
     `${kind} está temporariamente indisponível (${reason}). Consulte a fonte oficial: ${link}`);
 }
-export async function livePrice({fetchImpl=fetch,lang='en',currency,locale='',fallbackToUsd=false}={}){
+export async function livePrice({fetchImpl=fetch,lang='en',currency,locale='',fallbackToUsd=false,amount=1}={}){
   const code=String(priceCurrency({currency,lang,locale})).toUpperCase();
   if(!isCurrencyCode(code))return ui(lang,'unsupported');
   try{
@@ -88,8 +88,9 @@ export async function livePrice({fetchImpl=fetch,lang='en',currency,locale='',fa
       actualCode='USD';
     }
     if(value===null)return `${ui(lang,'unavailable')} (${code})\n${ui(lang,'usage')}\n${ui(lang,'source')}: ${RATE_URL}`;
-    const rate=formatRate(value,actualCode,lang);
-    return `${ui(lang,'rate')}\n1 SUM ≈ ${rate} ${actualCode}\n${ui(lang,'trades')}\n${ui(lang,'checked')}: ${UTC()}\n${ui(lang,'source')}: ${RATE_URL}`;
+    const qty=Number.isFinite(amount)&&amount>0&&amount<=1_000_000?amount:1;
+    const rate=formatRate(value*qty,actualCode,lang);
+    return `${ui(lang,'rate')}\n${qty} SUM ≈ ${rate} ${actualCode}\n${ui(lang,'trades')}\n${ui(lang,'checked')}: ${UTC()}\n${ui(lang,'source')}: ${RATE_URL}`;
   }catch{return `${ui(lang,'failed')}\n${ui(lang,'source')}: ${RATE_URL}`;}
 }
 export async function liveTransaction(txid,{fetchImpl=fetch,lang='en'}={}){
