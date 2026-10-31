@@ -1,10 +1,14 @@
 # Telegram Sum Helper
 
-**v0.0.5 — multilingual Sumcoin community support bot (Node.js 20+, no paid API required).**
+**v0.0.6 — multilingual Sumcoin community support bot (Node.js 20+, no paid API required).**
 
 `telegram-sum-helper` is a source-grounded first-line assistant for the Sumcoin Telegram community. It is **not a bank, exchange, wallet recovery service, blockchain node, or human administrator**. It cannot send or access coins. It never guarantees that Sumcoin's index-derived USD reference value can be converted into cash. It uses Telegram's official Bot API and native Node.js `fetch` with **no third-party runtime packages**. The optional OpenAI integration is disabled unless `OPENAI_API_KEY` is configured.
 
-**Deployment status:** v0.0.3 was confirmed running in the authorized group with Node.js 24.22.2 and 71 synchronized official-docs chunks. v0.0.4 passes local automated tests and must be live-tested after upgrade. The service starts or remains in persisted `observe` mode unless an authorized group admin changes it; do not switch on unsolicited group answers before testing.
+**Deployment status:** v0.0.5 was confirmed running in the authorized group under Node.js 24.22.2 with 125 searchable knowledge entries (40 reviewed topics plus 85 synchronized documents). v0.0.6 adds a production-schema hotfix for `/price` and requires a live command test after upgrade. The service starts or remains in persisted `observe` mode unless an authorized group admin changes it; do not switch on unsolicited group answers before testing.
+
+## v0.0.6 — SUM/USD price compatibility hotfix
+
+The production rates API returns an array of currency records, each with `code`, `price`, `n`, and `name`. `/price` now selects the row labeled `USD` and reads the numeric `n` field. Bad, missing, duplicate or implausible USD entries are rejected; all 94 earlier tests and 2 new regressions pass. The broader knowledge improvements below were introduced in v0.0.5.
 
 ## New in v0.0.5 — richer free knowledge and read-only diagnostics
 
@@ -33,18 +37,18 @@ This release adds **40 curated knowledge topics**, eight step-by-step guides (`/
 - New synced raw GitHub documents are still **only references** until facts are separately reviewed. Historical PoW documents are not promoted automatically. The old index FAQ (`www.sumcoinindex.com/page/faq`) is **not** in the new sync allowlist pending inspection of a suspicious PHP snippet found in web-indexed content.
 - Nothing changes your `.env`, systemd unit, existing `data/` folder, `INITIAL_MODE=observe`, NVM installation, or OpenAI usage (still zero without a key).
 
-### Publish v0.0.5 and deploy
+### Publish v0.0.6 and deploy
 
 On the Mac after downloading the release ZIP:
 
 ```bash
-mkdir -p ~/Documents/telegram-sum-helper-v0.0.5 && \
-unzip -oq ~/Downloads/telegram-sum-helper-v0.0.5.zip -d ~/Documents/telegram-sum-helper-v0.0.5 && \
-cd ~/Documents/telegram-sum-helper-v0.0.5/telegram-sum-helper && \
+mkdir -p ~/Documents/telegram-sum-helper-v0.0.6 && \
+unzip -oq ~/Downloads/telegram-sum-helper-v0.0.6.zip -d ~/Documents/telegram-sum-helper-v0.0.6 && \
+cd ~/Documents/telegram-sum-helper-v0.0.6/telegram-sum-helper && \
 bash scripts/push-update.sh
 ```
 
-The publisher verifies GitHub `main` is still the known v0.0.4 commit `b4d1677`, stages only release files in a fresh temporary clone, runs tests and pushes without force. If main diverged, it aborts rather than overwriting subsequent work.
+The publisher verifies GitHub `main` is still the known v0.0.5 commit `24799a7`, stages only release files in a fresh temporary clone, runs tests and pushes without force. If main diverged, it aborts rather than overwriting subsequent work.
 
 On the existing VM, logged in as `electrumbtc1`:
 
@@ -58,7 +62,7 @@ source "$NVM_DIR/nvm.sh"
 nvm use 24 >/dev/null
 git pull --ff-only origin main
 npm run check
-[ "$(node -p "require('./package.json').version")" = '0.0.5' ]
+[ "$(node -p "require('./package.json').version")" = '0.0.6' ]
 npm run sync
 systemctl --user restart telegram-sum-helper.service
 systemctl --user is-active telegram-sum-helper.service

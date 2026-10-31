@@ -13,7 +13,7 @@ const UTC = () => new Date().toISOString().replace('T',' ').slice(0,19) + ' UTC'
 async function json(url,fetchImpl){
   let res;
   try{
-    res=await fetchImpl(url,{headers:{accept:'application/json','user-agent':'telegram-sum-helper/0.0.5'},redirect:'error',signal:AbortSignal.timeout(TIMEOUT_MS)});
+    res=await fetchImpl(url,{headers:{accept:'application/json','user-agent':'telegram-sum-helper/0.0.6'},redirect:'error',signal:AbortSignal.timeout(TIMEOUT_MS)});
   }catch{throw new Error('Source unreachable or timed out');}
   if(!res.ok)throw new Error(`Source returned HTTP ${res.status}`);
   const type=res.headers?.get?.('content-type')||'';
@@ -29,6 +29,20 @@ async function json(url,fetchImpl){
 // The rates API is an external dependency. Only explicitly USD-labeled values
 // qualify; arbitrary numeric fields, BTC rates, timestamps and multipliers don't.
 export function parseUsd(input){
+  // Production /api/rates returns an array of currency records:
+  // [{code:'EUR',price:'€1130.33',n:1130.33,...},
+  //  {code:'USD',price:'$1258.06',n:1258.06,name:'US Dollar'},...]
+  // Use the numeric `n` field, never scrape the human-formatted price string.
+  // Some consumers wrap these records under rates or data.rates.
+  const rows = Array.isArray(input) ? input
+    : Array.isArray(input?.rates) ? input.rates
+    : Array.isArray(input?.data?.rates) ? input.data.rates : null;
+  if (rows) {
+    const matches = rows.filter(row => isPlain(row) && row.code === 'USD');
+    if (matches.length !== 1) return null;
+    const usd = safeNumber(matches[0].n);
+    return usd !== null && usd > 0 && usd < 1_000_000_000 ? usd : null;
+  }
   const candidates=[input?.USD,input?.usd,input?.rates?.USD,input?.rates?.usd,
     input?.data?.USD,input?.data?.usd,input?.data?.rates?.USD,
     input?.result?.USD,input?.result?.usd,input?.price?.USD,

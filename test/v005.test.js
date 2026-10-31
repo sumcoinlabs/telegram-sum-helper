@@ -117,3 +117,31 @@ test('all three languages have translated new wallet and explorer topics',async(
   assert.ok(txt.length>150);assert.ok(txt.includes('https://sumcoinwallet.org/'));
  }
 });
+
+// v0.0.6 production schema regression: public API returns an array, not a USD map.
+test('v0.0.6 recognizes the real 31-currency array rate schema via USD numeric n',async()=>{
+ const rows=[
+  {code:'EUR',price:'€1130.33',n:1130.33,name:'Euro'},
+  {code:'USD',price:'$1258.06',n:1258.06,name:'US Dollar'},
+  {code:'JPY',price:'¥198848.08',n:198848.08,name:'Japanese Yen'}
+ ];
+ assert.equal(parseUsd(rows),1258.06);
+ assert.equal(parseUsd({rates:rows}),1258.06);
+ assert.equal(parseUsd({data:{rates:rows}}),1258.06);
+ const text=await livePrice({fetchImpl:async (_url,opts)=>{
+   assert.equal(opts.redirect,'error');
+   return response(rows);
+ }});
+ assert.match(text,/1,258\.06/);
+ assert.match(text,/not a guaranteed sale/);
+});
+
+test('v0.0.6 rejects malformed, missing, duplicated and ambiguous USD array rows',()=>{
+ assert.equal(parseUsd([{code:'EUR',n:1500}]),null);
+ assert.equal(parseUsd([{code:'USD',price:'$1258.06'}]),null);
+ assert.equal(parseUsd([{code:'USD',n:'NaN'}]),null);
+ assert.equal(parseUsd([{code:'USD',n:0}]),null);
+ assert.equal(parseUsd([{code:'USD',n:-5}]),null);
+ assert.equal(parseUsd([{code:'USD',n:1300},{code:'USD',n:1400}]),null);
+ assert.equal(parseUsd([{code:'EUR',n:900},{code:'USD',n:'1322.70'}]),1322.7);
+});

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.6 — 2026-10-31
+
+- Fixed `/price` to parse the live official `https://rate.slicewallet.org/api/rates` response: an array of currency records (`code`, `price`, `n`, `name`), selecting only the USD row's numeric `n` field.
+- Also supports array records wrapped in `rates` or `data.rates`, while retaining supported object-form responses.
+- Rejects missing, duplicate, malformed, or implausible USD prices instead of guessing, without parsing formatted currency strings.
+- Added realistic regression tests for the production API's array schema, preserved read-only security controls, and kept all other commands, settings and curated content unchanged.
+
+
 ## 0.0.5 — 2026-10-31
 
 - Expanded reviewed support knowledge from 16 to **40 topics**, including wallet restore/connection/send/receive, index data and market-cap explanations, transaction confirmation, migration compatibility, staking diagnostics, developer APIs, privacy, and release compatibility.
