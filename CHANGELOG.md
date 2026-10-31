@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.2 — 2026-10-31
+
+- Multilingual support questions: message-language detection, optional per-member language override, and localized core USD/cashout and scam-safety answers in 12 languages.
+- Optional source-grounded multilingual AI with context-sensitive follow-ups; partial offline language support disclosed explicitly.
+- Expanded multilingual topic detection, avoided English-only notices and fixed missed pending-transfer reporting.
+- Localized Telegram command menus in seven languages, group-level daily AI request ceiling and private-chat access disabled by default.
+- Question-pattern learning now stores hashes and counts rather than raw example text unless explicitly opted in.
+- User feedback on bot reply IDs with administrator review command, localized usage guidance, and safer per-user explicit question cooldowns.
+- New `scripts/push-update.sh` safely commits/pushes v0.0.2 to an existing repository and adds a release tag.
+- Expanded automated tests, plus multilingual Telegram export analysis/import.
+
+
 ## 0.0.1 — 2026-10-31
 
 - Initial ground-up public release of `telegram-sum-helper`.

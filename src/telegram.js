@@ -61,18 +61,24 @@ export class TelegramClient {
     return this.call('sendMessage', payload);
   }
   getChatMember(chatId, userId) { return this.call('getChatMember', { chat_id: chatId, user_id: userId }); }
-  setMyCommands() {
-    return this.call('setMyCommands', { commands: [
+  setMyCommands(languageCode='') {
+    const desc={es:['Ayuda y seguridad','Pregunta sobre Sumcoin','Elegir idioma','Buscar documentos oficiales','Buscar archivos GitHub','Fuentes oficiales','USD y retiros','Migración de carteras','Enviar comentarios'],pt:['Ajuda e segurança','Perguntar sobre Sumcoin','Escolher idioma','Pesquisar documentos','Pesquisar GitHub','Fontes oficiais','USD e saques','Migração da carteira','Enviar feedback'],fr:['Aide et sécurité','Question sur Sumcoin','Choisir la langue','Chercher les documents','Chercher sur GitHub','Sources officielles','USD et retraits','Migration des wallets','Signaler une réponse'],de:['Hilfe und Sicherheit','Sumcoin-Frage stellen','Sprache wählen','Dokumente durchsuchen','GitHub durchsuchen','Offizielle Quellen','USD und Auszahlung','Wallet-Migration','Antwort melden'],it:['Aiuto e sicurezza','Domanda su Sumcoin','Scegli la lingua','Cerca documenti','Cerca su GitHub','Fonti ufficiali','USD e prelievi','Migrazione wallet','Segnala risposta'],ru:['Помощь и безопасность','Вопрос о Sumcoin','Выбор языка','Поиск в документах','Поиск на GitHub','Официальные источники','USD и вывод','Миграция кошелька','Сообщить об ошибке'],zh:['帮助与安全','询问 Sumcoin','选择语言','搜索官方文档','搜索 GitHub','官方资料','美元与提现','钱包迁移','反馈回答']};
+    const commands = [
       { command: 'help', description: 'Bot features and safety information' },
       { command: 'ask', description: 'Ask a Sumcoin question with sources' },
+      { command: 'language', description: 'Set your reply language' },
       { command: 'find', description: 'Search official Sumcoin knowledge' },
       { command: 'github', description: 'Search official Sumcoin GitHub files' },
       { command: 'sources', description: 'Verified Sumcoin information sources' },
       { command: 'cashout', description: 'USD index value vs cash withdrawal' },
+      { command: 'feedback', description: 'Report a bot answer' },
       { command: 'migration', description: 'Old Slice / PoW to current wallet' },
       { command: 'wallet', description: 'Mobile wallet basics' },
       { command: 'staking', description: 'Proof-of-stake and minting' },
       { command: 'security', description: 'Scam and recovery-phrase safety' }
-    ] });
+    ];
+    const order=['help','ask','language','find','github','sources','cashout','migration','feedback'];
+    if(desc[languageCode])order.forEach((name,i)=>{const item=commands.find(x=>x.command===name);if(item)item.description=desc[languageCode][i];});
+    return this.call('setMyCommands',{commands,...(languageCode?{language_code:languageCode}:{})});
   }
 }

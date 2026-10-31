@@ -9,8 +9,8 @@ if (!filename || process.argv.includes('--help')) {
 }
 const doc = JSON.parse(fs.readFileSync(filename, 'utf8'));
 if (!Array.isArray(doc.messages)) throw new Error('This is not a Telegram Desktop JSON chat export (missing messages array).');
-const counts = { cashout: 0, wallet: 0, security: 0, staking: 0, language: 0, other: 0 };
-const languages = { es: 0, other: 0, unknown: 0 };
+const counts = { other: 0 }; 
+const languages = {};
 const byMonth = {};
 let scanned = 0;
 for (const msg of doc.messages) {
@@ -19,8 +19,8 @@ for (const msg of doc.messages) {
   if (!raw.trim()) continue;
   scanned++;
   const { topic, language } = classify(raw);
-  counts[topic || 'other']++;
-  languages[language]++;
+  const key=topic||'other';counts[key]=(counts[key]||0)+1;
+  languages[language]=(languages[language]||0)+1;
   const month = String(msg.date || '').slice(0, 7);
   if (/^\d{4}-\d{2}$/.test(month)) {
     const bucket = byMonth[month] ||= {};

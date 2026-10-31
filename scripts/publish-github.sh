@@ -37,6 +37,7 @@ if git ls-files | grep -Eq '(^|/)(\.env|result\.json|.*\.log)$'; then
   exit 1
 fi
 
-git commit -m 'Initial telegram-sum-helper v0.0.1 — grounded Sumcoin AI bot'
+RELEASE_VERSION="$(node -p 'require("./package.json").version')"
+git commit -m "Initial telegram-sum-helper v${RELEASE_VERSION} — grounded Sumcoin AI bot"
 gh repo create sumcoinlabs/telegram-sum-helper --public --source=. --remote=origin --push
 printf '\nPublished: https://github.com/sumcoinlabs/telegram-sum-helper\n'

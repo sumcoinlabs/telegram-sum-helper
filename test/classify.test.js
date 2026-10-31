@@ -22,12 +22,12 @@ test('staking and wallet transfer have their own categories', () => {
   assert.equal(classify('How do I send Sumcoin from the wallet?').topic, 'wallet');
 });
 
-test('non-English reminders require confident signals', () => {
-  assert.equal(classify('Hola, ¿cómo están? Gracias').topic, 'language');
-  assert.equal(classify('Привет, как дела?').topic, 'language');
+test('do not issue language-enforcement reminders or interrupt unrelated chat', () => {
+  assert.equal(classify('Hola, ¿cómo están? Gracias').topic, null);
+  assert.equal(classify('Привет, как дела?').topic, null);
   assert.equal(classify('Can I ask one question?').topic, null);
   assert.equal(classify('sumcoin').topic, null);
-  assert.equal(detectLanguage('Mi Wallet'), 'unknown');
+  assert.equal(detectLanguage('Mi Wallet'), 'en');
 });
 
 test('ordinary messages and approximate values should not trigger replies', () => {
@@ -51,13 +51,11 @@ test('bank cashout question is categorized as cashout not wallet', () => {
   assert.equal(classify('Can I receive USD in my bank account from SUM?').topic, 'cashout');
 });
 
-test('does not pretend to have complex troubleshooting knowledge', () => {
-  for (const text of [
-    'My wallet balance is zero, where did my SUM go?',
-    'I sent 5 SUM and it never arrived',
-    'How do I restore my Sumcoin wallet after changing my phone?',
-    'Is SUM BIP39 compatible?'
-  ]) assert.equal(classify(text).topic, null, text);
+test('routes common troubleshooting to sourced support, without claiming to diagnose accounts', () => {
+  assert.equal(classify('My wallet balance is zero, where did my SUM go?').topic,'missing-balance');
+  assert.equal(classify('I sent 5 SUM and it never arrived').topic,'pending');
+  assert.equal(classify('How do I restore my Sumcoin wallet after changing my phone?').topic,'seed');
+  assert.equal(classify('Is SUM BIP39 compatible?').topic,'legacy');
 });
 
 test('explicitly reporting a scam gets security guidance', () => {

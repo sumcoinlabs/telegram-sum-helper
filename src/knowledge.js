@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {retrievalTerms} from './classify.js';
 
 export const CURATED_FILE = new URL('../knowledge/curated.json', import.meta.url);
 export const SYNC_FILE = new URL('../data/synced.json', import.meta.url);
@@ -27,7 +28,7 @@ export class Knowledge {
     return [...primary,...learned,...synced];
   }
   search(input,{limit=5}={}) {
-    const terms = tokenizeSet(input), q=normalize(input);
+    const terms = tokenizeSet(retrievalTerms(input)), q=normalize(input);
     if(!terms.length)return [];
     const scored = [];
     for(const d of this.documents()) {

@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
+import {safeForLearning} from './privacy.js';
 import { normalize,tokens } from './knowledge.js';
 
 const DAYS_30=30*86400000;
@@ -7,26 +9,36 @@ const BANNED=/(?:\b(?:seed|recovery|secret|mnemonic|private|password|passphrase|
 const ALLOWED_SOURCE=/^https:\/\/(?:www\.)?(?:sumcoin\.org|sumcoinwallet\.org|sumcoinindex\.com|github\.com\/sumcoinlabs\/|docs\.sumcoin\.org\/)/i;
 export function sanitizeQuestion(input){
   const s=String(input||'').slice(0,600).trim();
-  if(s.length<12 || BANNED.test(s) || /https?:\/\/|t\.me\/|@\w+/.test(s))return null;
+  if(s.length<10 || BANNED.test(s) || !safeForLearning(s) || /https?:\/\/|t\.me\/|@\w+/.test(s))return null;
   return s.replace(/\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/g,'[email]').replace(/\+?\d[\d\s()-]{7,}\d/g,'[number]')
     .replace(/\b[a-zA-Z0-9]{26,}\b/g,'[address]').replace(/\b\d+(?:[.,]\d+)?\b/g,'[number]').replace(/[\r\n]+/g,' ').slice(0,240);
 }
-export function fingerprint(s){return [...new Set(tokens(s))].filter(t=>!['sumcoin','wallet','help','hello','please','sum'].includes(t)).sort().slice(0,6).join(':');}
+export function fingerprint(s){
+  const cleaned=normalize(String(s||'').replace(/\d+(?:[.,]\d+)?/g,' # '));
+  const words=cleaned.match(/[\p{L}\p{N}]+/gu)||[];
+  const filtered=[...new Set(words.filter(w=>w.length>1&&!['sumcoin','wallet','hello','please','help'].includes(w)))].sort();
+  const canonical=filtered.join('|');
+  return canonical.length<4?'':createHash('sha256').update(canonical).digest('hex').slice(0,24);
+}
 const jsonread=(f,def)=>{try{return JSON.parse(fs.readFileSync(f,'utf8'));}catch(e){if(e.code==='ENOENT')return def;throw e;}};
 export class Learning {
   constructor(file='./data/learning.json',now=()=>Date.now()){
-    this.file=file;this.now=now;this.data=jsonread(file,{patterns:{},pending:[],approved:[],nextId:1});this.prune();
+    this.file=file;this.now=now;this.storeExamples=process.env.LEARNING_STORE_EXAMPLES==='true';this.data=jsonread(file,{patterns:{},pending:[],approved:[],nextId:1});this.prune();
+    if(!this.storeExamples){let changed=false;for(const p of Object.values(this.data.patterns))if('example' in p){delete p.example;changed=true;}if(changed)this.save();}
   }
   save(){fs.mkdirSync(path.dirname(this.file),{recursive:true,mode:0o700});const tmp=this.file+'.'+process.pid+'.new';fs.writeFileSync(tmp,JSON.stringify(this.data,null,2)+'\n',{mode:0o600});fs.renameSync(tmp,this.file);}
   prune(){const n=this.now();for(const [k,p] of Object.entries(this.data.patterns))if(n-p.seen>DAYS_30)delete this.data.patterns[k];this.data.pending=this.data.pending.slice(-150);
     const keys=Object.entries(this.data.patterns).sort((a,b)=>b[1].count-a[1].count || b[1].seen-a[1].seen);
     for(const [key] of keys.slice(1000))delete this.data.patterns[key];}
-  observe(q,topic=null){
+  observe(q,topic=null,language='unknown'){
     const s=sanitizeQuestion(q);if(!s)return false;
     const key=fingerprint(s);if(key.length<5)return false;
-    const p=this.data.patterns[key]||={count:0,topic:null,example:s,seen:0};
+    const p=this.data.patterns[key]||={count:0,topic:null,language,seen:0};
+    delete p.example;
+    if(this.storeExamples)p.example=s;
     p.count=Math.min(p.count+1,100000);p.seen=this.now();
     if(topic&&p.topic!==topic)p.topic=topic;
+    if(/^[a-z]{2}$/.test(language))p.language=language;
     this.data.patterns[key]=p;this.prune();this.save();return true;
   }
   // Automatic language/intent adaptation: common approved-topic phrasings can trigger
@@ -48,7 +60,7 @@ export class Learning {
   }
   reject(id){const prev=this.data.pending.length;this.data.pending=this.data.pending.filter(x=>x.id!==id);if(this.data.pending.length!==prev){this.save();return true;}return false;}
   stats(){const hot=Object.values(this.data.patterns).sort((a,b)=>b.count-a.count).slice(0,5);
-    return `Learned question patterns: ${Object.keys(this.data.patterns).length}\nPending moderator-reviewed answers: ${this.data.pending.length}\nApproved answers: ${this.data.approved.length}\nRepeated patterns (redacted):\n${hot.map(x=>`${x.count}× ${x.example}`).join('\n')||'(none)'}`;
+    return `Learned question patterns: ${Object.keys(this.data.patterns).length}\nPending moderator-reviewed answers: ${this.data.pending.length}\nApproved answers: ${this.data.approved.length}\nRepeated patterns (redacted):\n${hot.map(x=>`${x.count}× [${x.language||'?'} / ${x.topic||'unclassified'}] ${x.example||'(no text stored)'}`).join('\n')||'(none)'}`;
   }
   review(){return this.data.pending.slice(0,6).map(x=>`#${x.id} (${x.kind}): ${x.title}\nAnswer: ${x.text.slice(0,250)}\nSource: ${x.source||'MISSING: add a source before approval'}`).join('\n\n')||'No pending community answers.';}
 }

@@ -20,8 +20,8 @@ function setup(initialMode='reply'){
 }
 test('authorized group, and accurate Spanish cashout',async()=>{const x=setup();try{
  await x.handler(x.message(1,'Como puedo retirar 100 dolares de mi wallet sumcoin?',{chat:{type:'supergroup',username:'other',id:-5}}));assert.equal(x.sent.length,0);
- await x.handler(x.message(2,'Como puedo retirar 100 dolares de mi wallet sumcoin?'));assert.equal(x.sent.length,1);assert.match(x.sent[0].text,/not bank deposits|not a bank/i);
- assert.match(x.sent[0].text,/index-based/i);
+ await x.handler(x.message(2,'Como puedo retirar 100 dolares de mi wallet sumcoin?'));assert.equal(x.sent.length,1);assert.match(x.sent[0].text,/no dólares depositados/i);
+ assert.match(x.sent[0].text,/índice/i);
 }finally{x.clean()}});
 test('zero wallet balance routes to specific troubleshooting not generic wallet',async()=>{const x=setup();try{
  await x.handler(x.message(1,'My Sumcoin wallet balance is zero. Where did my SUM go?'));assert.equal(x.sent.length,1);assert.match(x.sent[0].text,/empty wallet screen/i);
