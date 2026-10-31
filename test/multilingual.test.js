@@ -61,14 +61,14 @@ function fixture(mode='reply',ai=new ConversationAI()){
  return {handler,message,sent,state,dir,clean:()=>fs.rmSync(dir,{recursive:true,force:true})};
 }
 test('Spanish member receives Spanish automatic cashout without English-only warning',async()=>{
- const f=fixture();try{await f.handler(f.message(1,samples.es));assert.equal(f.sent.length,1);assert.match(f.sent[0],/dólares/);assert.doesNotMatch(f.sent[0],/translate.*english/i);}finally{f.clean();}
+ const f=fixture();try{await f.handler(f.message(1,samples.es));assert.equal(f.sent.length,1);assert.match(f.sent[0],/intercambiar SUM/i);assert.doesNotMatch(f.sent[0],/translate.*english/i);}finally{f.clean();}
 });
 test('per-user /language override applies and can be reset in memory',async()=>{
  const f=fixture();try{
   await f.handler(f.message(1,'/language pt'));
-  await f.handler(f.message(2,'/cashout'));assert.match(f.sent.at(-1),/não dólares depositados/);
+  await f.handler(f.message(2,'/cashout'));assert.match(f.sent.at(-1),/negociar SUM diretamente/);
   await f.handler(f.message(3,'/language auto'));
-  await f.handler(f.message(4,'/cashout'));assert.match(f.sent.at(-1),/holds SUM cryptocurrency/);
+  await f.handler(f.message(4,'/cashout'));assert.match(f.sent.at(-1),/exchange SUM for fiat currency/);
  }finally{f.clean();}
 });
 test('observing multilingual questions makes no unsolicited replies',async()=>{

@@ -1,3 +1,5 @@
+import {FACTS} from './facts-localized.js';
+import {ui} from './locale-ui.js';
 // Deterministic, zero-API-cost answers. Facts are from the reviewed curated index.
 // Live-synced text is discoverable as reading links, but never silently promoted
 // to factual statements: some official pages/white papers describe old PoW behavior.
@@ -40,11 +42,11 @@ const PT = {
   'staking-mobile':'A carteira móvel Sumcoin Wallet não faz minting; o staking depende de uma instalação Core compatível e atualizada.',
   'migration-recovery':'Slice/SPV antigo e a carteira atual podem usar caminhos de derivação incompatíveis. As mesmas palavras não garantem os mesmos endereços. Consulte o procedimento oficial.',
   'sumcoinlib':'sumcoinlib é uma biblioteca Dart/Flutter para endereços Sumcoin, chaves hierárquicas e construção/assinatura de transações UTXO. Verifique a compatibilidade na documentação da versão.',
-  index:'A referência de valor do SUM é calculada por um índice que acompanha as 100 maiores criptomoedas por capitalização de mercado. Essa fórmula é uma referência de avaliação, não uma ordem de compra ou venda. Não garante liquidez, comprador disponível ou conversão automática em dólares.',
-  chain:'Sumcoin é uma criptomoeda de camada 1 voltada a transferências diretas. O projeto começou com prova de trabalho e posteriormente migrou para prova de participação. A moeda SUM não representa um depósito bancário nem uma participação acionária.',
-  buy:'Para comprar ou vender SUM, é preciso encontrar uma contraparte disposta e confirmar os termos de uma negociação. O valor exibido no índice não garante que exista comprador nem representa uma oferta executável.',
+  index:'O Sumcoin Index acompanha as 100 maiores criptomoedas por capitalização de mercado e publica uma cotação de referência para negociações diretas entre pessoas. Para a cotação atual na sua moeda, use /price.',
+  chain:'Sumcoin é uma criptomoeda de camada 1 para transferências diretas entre pessoas. A rede começou com prova de trabalho e migrou para prova de participação (PoS).',
+  buy:'SUM pode ser comprado ou vendido diretamente entre pessoas. Confira a cotação de referência com /price e combine valor e pagamento com a outra parte.',
   p2p:'SUM pode ser transferido diretamente entre carteiras compatíveis para pagar quem concordar em recebê-lo. A aceitação por uma loja ou a disponibilidade de anúncios no marketplace deve ser confirmada no momento da negociação.',
-  wallet:'A Sumcoin Wallet é uma carteira de autocustódia para enviar e receber SUM; não funciona como conta bancária nem faz saque de dólares. Guarde os dados de recuperação em local seguro, fora da internet.',
+  wallet:'Sumcoin Wallet é uma carteira de autocustódia para enviar e receber SUM. Você controla suas chaves e deve guardar a frase de recuperação em segurança.',
   seed:'Nunca envie palavras de recuperação, chaves privadas, senhas ou códigos para este bot ou alguém que se diga suporte. Carteiras Slice antigas podem usar um método de recuperação diferente das carteiras atuais.',
   legacy:'As carteiras Slice antigas e a Sumcoin Wallet atual podem usar formatos de recuperação incompatíveis. Consulte a página oficial de migração para verificar condições e elegibilidade; não há conversão automática garantida.',
   staking:'A rede Sumcoin atual utiliza prova de participação (PoS). A participação depende de software Core compatível; a carteira móvel não realiza minting. Regras e recompensas precisam ser conferidas na versão atual do Core.',
@@ -98,10 +100,11 @@ const ADDITIONS = {
   }
 };
 function labels(lang){return LABELS[lang]||LABELS.en;}
-function fact(article,lang){
+export function reviewedFact(article,lang){
   if(lang==='en')return article.body||article.text;
   if(lang==='pt'&&PT[article.id])return PT[article.id];
   if(lang==='es'&&ES[article.id])return ES[article.id];
+  if(FACTS[lang]?.[article.id])return FACTS[lang][article.id];
   if(hasTranslation(lang,article.id))return t(lang,article.id);
   return null;
 }
@@ -117,17 +120,17 @@ export function offlineAnswer({docs,knowledge,lang='en',expanded=false}){
     return links.length?`${l.unreviewed}\n\n${links.join('\n')}`:t(lang,'none');
   }
   const original=knowledge.find(primary.id)||primary;
-  const first=fact(original,lang);
+  const first=reviewedFact(original,lang);
   const result=[];
   if(!first){result.push(t(lang,'englishDetail'),original.body||original.text);}
   else result.push(first);
   const addon=ADDITIONS[lang]?.[original.id];
-  if(addon)result.push(addon);
+  if(addon&&expanded)result.push(addon);
   const related=(RELATED[original.id]||[]).map(id=>knowledge.find(id)).filter(Boolean);
-  const slots=expanded?2:1;
+  const slots=expanded?2:0;
   const chosen=[];
-  for(const item of related){
-    const f=fact(item,lang);
+  for(const item of (expanded?related:[])){
+    const f=reviewedFact(item,lang);
     if(!f)continue; // Never silently invent translations of other topics.
     result.push(`${l.context}: ${f}`);
     chosen.push(item);
@@ -145,7 +148,7 @@ export function offlineAnswer({docs,knowledge,lang='en',expanded=false}){
   const references=[...sources,...reading].filter((u,i,a)=>a.indexOf(u)===i).slice(0,4);
   const referenceText=references.length?`\n\n${lang==='en'?'Source':t(lang,'sources')}:\n${references.map((u,i)=>`${i+1}. ${u}`).join('\n')}`:'';
   const historical=expanded&&['staking','chain','legacy'].includes(original.id)?`\n\n${l.historic}`:'';
-  const end=expanded?'':`\n\n${l.more}`;
+  const end=expanded?'':`\n\n${lang==='en'||lang==='es'||lang==='pt'?l.more:ui(lang,'more')}`;
   return `${result.join('\n\n')}${historical}${referenceText}${end}`.slice(0,3400);
 }
 export function isContextualFollowup(text){

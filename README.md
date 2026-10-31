@@ -1,10 +1,66 @@
 # Telegram Sum Helper
 
-**v0.0.6 — multilingual Sumcoin community support bot (Node.js 20+, no paid API required).**
+**v0.0.7 — multilingual Sumcoin community support bot (Node.js 20+, no paid API required).**
 
 `telegram-sum-helper` is a source-grounded first-line assistant for the Sumcoin Telegram community. It is **not a bank, exchange, wallet recovery service, blockchain node, or human administrator**. It cannot send or access coins. It never guarantees that Sumcoin's index-derived USD reference value can be converted into cash. It uses Telegram's official Bot API and native Node.js `fetch` with **no third-party runtime packages**. The optional OpenAI integration is disabled unless `OPENAI_API_KEY` is configured.
 
-**Deployment status:** v0.0.5 was confirmed running in the authorized group under Node.js 24.22.2 with 125 searchable knowledge entries (40 reviewed topics plus 85 synchronized documents). v0.0.6 adds a production-schema hotfix for `/price` and requires a live command test after upgrade. The service starts or remains in persisted `observe` mode unless an authorized group admin changes it; do not switch on unsolicited group answers before testing.
+**Deployment status:** v0.0.5 was confirmed running in the authorized group under Node.js 24.22.2 with 125 searchable knowledge entries (40 reviewed topics plus 85 synchronized documents). v0.0.6 fixed the USD array-rate parser. v0.0.7 adds localized peer-to-peer rates and softer wording; install the new version before testing. Existing `observe` mode persists unless a verified admin changes it.
+
+## New in v0.0.7 — clearer peer-to-peer rates, localized currencies, and less repetition
+
+Normal answers now describe SUM as a peer-to-peer cryptocurrency and the Sumcoin Index as its **reference rate for direct trades**. A typical `/price` answer is: **“Sumcoin peer-to-peer reference rate — 1 SUM ≈ [live value] [currency]. People agree on the final rate directly when trading.”** Scam/recovery warnings remain where they actually belong; `/ask` stops automatically adding unrelated related-topic cautions. `/more` still provides deeper source-backed context.
+
+**Currency is not the same thing as language.** `/price` uses a helpful default based on Telegram's language preference; if a regional locale like `es-MX`, `pt-PT`, or `en-GB` is available, that region determines the default. Otherwise generic Spanish stays in USD (no assumption that everyone speaks Spanish in Spain), Portuguese defaults to BRL, German to EUR, Japanese to JPY, and so on. The bot uses the corresponding **real record** from the existing approved 31-currency rate feed; it does not synthesize FX rates. If an automatically suggested currency is missing from the feed, it uses the explicitly labeled USD rate instead. An explicitly selected unavailable currency reports unavailable rather than silently changing currencies.
+
+**New commands:**
+
+```
+/price@SumcoinHelperBot             # Suggested local currency, based on locale
+/price@SumcoinHelperBot BRL         # One-time currency override
+/price@SumcoinHelperBot EUR         # One-time currency override
+/currency@SumcoinHelperBot MXN      # Save a preference for 24h (in memory)
+/currency@SumcoinHelperBot auto     # Return to automatic selection
+/language@SumcoinHelperBot es       # Choose reply language
+/guide@SumcoinHelperBot pending    # Troubleshooting guide
+```
+
+**14 languages for the key support paths:** English, Spanish, Portuguese, French, German, Italian, Russian, Arabic, Hindi, Chinese, Japanese, Korean, Turkish and Indonesian. Price display, eight troubleshooting guides, basic blockchain/explorer output, and 12 high-frequency knowledge topics now have authored translations. More specialized technical topics are **not falsely claimed to be translated**: English details are clearly identified when no reviewed translation exists. Language detection uses message text first and Telegram locale as a fallback. More language coverage can be added incrementally without a paid API.
+
+**No extra services or billing:** uses the existing rate endpoint, fixed HTTPS hosts, Node.js built-ins, Telegram Bot API and existing user-level systemd unit. No new dependency, server port, automatic group reply, admin privilege, wallet key, or database. No `.env` changes. Rate and explorer lookup tests use mocked API responses; validate them against the live endpoints after upgrading.
+
+### Publish v0.0.7 on your Mac
+
+Download `telegram-sum-helper-v0.0.7.zip` to Downloads, then:
+
+```bash
+mkdir -p ~/Documents/telegram-sum-helper-v0.0.7 && \
+unzip -oq ~/Downloads/telegram-sum-helper-v0.0.7.zip -d ~/Documents/telegram-sum-helper-v0.0.7 && \
+cd ~/Documents/telegram-sum-helper-v0.0.7/telegram-sum-helper && \
+bash scripts/push-update.sh
+```
+
+The publisher checks the GitHub `main` base, runs all regression tests and stages only release files; no force-push.
+
+### Deploy on the existing VM as `electrumbtc1`
+
+```bash
+bash <<'SH'
+set -Eeuo pipefail
+[ "$(whoami)" = 'electrumbtc1' ]
+cd /home/electrumbtc1/telegram-sum-helper
+export NVM_DIR="$HOME/.nvm"
+source "$NVM_DIR/nvm.sh"
+nvm use 24 >/dev/null
+git pull --ff-only origin main
+test "$(node -p "require('./package.json').version")" = '0.0.7'
+npm run check
+systemctl --user restart telegram-sum-helper.service
+systemctl --user is-active telegram-sum-helper.service
+journalctl --user -u telegram-sum-helper.service -n 12 --no-pager
+SH
+```
+
+---
 
 ## v0.0.6 — SUM/USD price compatibility hotfix
 
@@ -36,41 +92,6 @@ This release adds **40 curated knowledge topics**, eight step-by-step guides (`/
 - Natural-language questions such as `/ask What is the current Sumcoin price?` use the live price path, while `/ask How is the index calculated?` retains documented methodology rather than implying a current bid.
 - New synced raw GitHub documents are still **only references** until facts are separately reviewed. Historical PoW documents are not promoted automatically. The old index FAQ (`www.sumcoinindex.com/page/faq`) is **not** in the new sync allowlist pending inspection of a suspicious PHP snippet found in web-indexed content.
 - Nothing changes your `.env`, systemd unit, existing `data/` folder, `INITIAL_MODE=observe`, NVM installation, or OpenAI usage (still zero without a key).
-
-### Publish v0.0.6 and deploy
-
-On the Mac after downloading the release ZIP:
-
-```bash
-mkdir -p ~/Documents/telegram-sum-helper-v0.0.6 && \
-unzip -oq ~/Downloads/telegram-sum-helper-v0.0.6.zip -d ~/Documents/telegram-sum-helper-v0.0.6 && \
-cd ~/Documents/telegram-sum-helper-v0.0.6/telegram-sum-helper && \
-bash scripts/push-update.sh
-```
-
-The publisher verifies GitHub `main` is still the known v0.0.5 commit `24799a7`, stages only release files in a fresh temporary clone, runs tests and pushes without force. If main diverged, it aborts rather than overwriting subsequent work.
-
-On the existing VM, logged in as `electrumbtc1`:
-
-```bash
-bash <<'SH'
-set -Eeuo pipefail
-[ "$(whoami)" = "electrumbtc1" ]
-cd /home/electrumbtc1/telegram-sum-helper
-export NVM_DIR="$HOME/.nvm"
-source "$NVM_DIR/nvm.sh"
-nvm use 24 >/dev/null
-git pull --ff-only origin main
-npm run check
-[ "$(node -p "require('./package.json').version")" = '0.0.6' ]
-npm run sync
-systemctl --user restart telegram-sum-helper.service
-systemctl --user is-active telegram-sum-helper.service
-journalctl --user -u telegram-sum-helper.service -n 12 --no-pager
-SH
-```
-
-Use `/price`, `/guide restore`, `/ask ¿Cómo restauro mi cartera?` and `/ask Como funciona o staking?` to test. Leave the group in observation mode while validating the new live calls.
 
 ## New in 0.0.4 — free answer improvements
 

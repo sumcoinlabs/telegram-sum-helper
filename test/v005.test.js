@@ -64,11 +64,11 @@ test('live price recognizes only explicitly labeled USD and never other arbitrar
  assert.equal(parseUsd({BTC:0.01,marketCap:500000000}),null);
  assert.equal(parseUsd({rates:{USD:'NaN'}}),null);
  const text=await livePrice({fetchImpl:async url=>{assert.equal(url,'https://rate.slicewallet.org/api/rates');return response({rates:{USD:1402.75}})}});
- assert.match(text,/1,402\.75/);assert.match(text,/not a guaranteed sale/);
+ assert.match(text,/1,402\.75/);assert.match(text,/agree on the final rate directly|final rate directly/i);
 });
 test('live price returns unavailable instead of inventing numbers if API changes',async()=>{
  const text=await livePrice({fetchImpl:async()=>response({marketcap:500000000,random:999})});
- assert.match(text,/unavailable/);assert.doesNotMatch(text,/500000000|\$999/);
+ assert.match(text,/not available|unavailable/);assert.doesNotMatch(text,/500000000|\$999/);
 });
 test('live lookups disable redirects and request only fixed allowlisted URLs',async()=>{
  const txid='f'.repeat(64);let hits=[];
@@ -81,9 +81,9 @@ test('live lookups disable redirects and request only fixed allowlisted URLs',as
 });
 test('live lookups reject mismatched or unrecognized JSON and do not display fabricated fields',async()=>{
  const tx=await liveTransaction('a'.repeat(64),{fetchImpl:async()=>response({txid:'b'.repeat(64),confirmations:999})});
- assert.match(tx,/unavailable/);assert.doesNotMatch(tx,/Confirmations: 999/);
+ assert.match(tx,/unavailable|temporarily/);assert.doesNotMatch(tx,/Confirmations: 999/);
  const addr=await liveAddress('1BoatSLRHtKNngkdXEeobR76b53LETtpyT',{fetchImpl:async()=>response({balance: 'invalid'})});
- assert.match(addr,/unavailable/);
+ assert.match(addr,/unavailable|temporarily/);
 });
 test('live lookups reject oversized responses and HTML',async()=>{
  const text=await livePrice({fetchImpl:async()=>({ok:true,status:200,headers:{get:k=>k==='content-type'?'text/html':null},text:async()=>'<html>something</html>'})});
@@ -105,7 +105,7 @@ test('natural-language current price routes to live read-only API, not canned in
 test('formula explanation does not make a live price call',async()=>{
  const x=fixture();try{
   await x.handler(x.msg('/ask@SumcoinHelperBot How does Sumcoin calculate its value?',1));
-  assert.equal(x.calls.length,0);assert.match(x.sent[0].txt,/top 100 cryptocurrencies/);
+  assert.equal(x.calls.length,0);assert.match(x.sent[0].txt,/100 largest cryptocurrencies/);
  }finally{x.close()}
 });
 test('all three languages have translated new wallet and explorer topics',async()=>{
@@ -133,7 +133,7 @@ test('v0.0.6 recognizes the real 31-currency array rate schema via USD numeric n
    return response(rows);
  }});
  assert.match(text,/1,258\.06/);
- assert.match(text,/not a guaranteed sale/);
+ assert.match(text,/agree on the final rate directly|final rate directly/i);
 });
 
 test('v0.0.6 rejects malformed, missing, duplicated and ambiguous USD array rows',()=>{

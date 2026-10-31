@@ -1,3 +1,4 @@
+import {ui,preferredCurrency,explorerUI} from './locale-ui.js';
 // Read-only fixed-host public API lookups. No arbitrary user-supplied URLs, redirects,
 // credentials, RPC access, or writes to a blockchain. Failed lookups never become facts.
 const RATE_URL = 'https://rate.slicewallet.org/api/rates';
@@ -26,33 +27,47 @@ async function json(url,fetchImpl){
   try{return JSON.parse(body);}catch{throw new Error('Unrecognized source JSON');}
 }
 
-// The rates API is an external dependency. Only explicitly USD-labeled values
-// qualify; arbitrary numeric fields, BTC rates, timestamps and multipliers don't.
-export function parseUsd(input){
-  // Production /api/rates returns an array of currency records:
-  // [{code:'EUR',price:'€1130.33',n:1130.33,...},
-  //  {code:'USD',price:'$1258.06',n:1258.06,name:'US Dollar'},...]
-  // Use the numeric `n` field, never scrape the human-formatted price string.
-  // Some consumers wrap these records under rates or data.rates.
-  const rows = Array.isArray(input) ? input
-    : Array.isArray(input?.rates) ? input.rates
-    : Array.isArray(input?.data?.rates) ? input.data.rates : null;
-  if (rows) {
-    const matches = rows.filter(row => isPlain(row) && row.code === 'USD');
-    if (matches.length !== 1) return null;
-    const usd = safeNumber(matches[0].n);
-    return usd !== null && usd > 0 && usd < 1_000_000_000 ? usd : null;
+// Read only a currency record explicitly labelled with the requested ISO code.
+// Never synthesize FX conversions from another currency or parse display strings.
+export function parseCurrency(input,currency='USD'){
+  const code=String(currency).toUpperCase();
+  if(!/^[A-Z]{3}$/.test(code))return null;
+  const rows=Array.isArray(input)?input
+    :Array.isArray(input?.rates)?input.rates
+    :Array.isArray(input?.data?.rates)?input.data.rates:null;
+  if(rows){
+    const found=rows.filter(r=>isPlain(r)&&String(r.code||'').toUpperCase()===code);
+    if(found.length!==1)return null;
+    const n=safeNumber(found[0].n);
+    return n!==null&&n>0&&n<1_000_000_000?n:null;
   }
-  const candidates=[input?.USD,input?.usd,input?.rates?.USD,input?.rates?.usd,
-    input?.data?.USD,input?.data?.usd,input?.data?.rates?.USD,
-    input?.result?.USD,input?.result?.usd,input?.price?.USD,
-    input?.price?.usd,input?.price_usd,input?.sum_usd];
-  for(const candidate of candidates){
-    const v=isPlain(candidate)?(candidate.price??candidate.rate??candidate.value):candidate;
-    const n=safeNumber(v);
+  if(!isPlain(input))return null;
+  const containers=[input,input.rates,input.data,input.data?.rates,input.result,input.price];
+  for(const obj of containers){
+    if(!isPlain(obj))continue;
+    for(const key of [code,code.toLowerCase()]){
+      if(!Object.hasOwn(obj,key))continue;
+      const value=obj[key];
+      const n=safeNumber(isPlain(value)?(value.n??value.rate??value.value??value.price):value);
+      if(n!==null&&n>0&&n<1_000_000_000)return n;
+    }
+  }
+  // Legacy USD-specific property aliases, not guessed numeric fields.
+  if(code==='USD')for(const value of [input.price_usd,input.sum_usd]){
+    const n=safeNumber(value);
     if(n!==null&&n>0&&n<1_000_000_000)return n;
   }
   return null;
+}
+export const parseUsd=input=>parseCurrency(input,'USD');
+export function isCurrencyCode(code){return /^[A-Z]{3}$/.test(String(code||''));}
+export function priceCurrency({currency,lang='en',locale='' }={}){
+  return currency||preferredCurrency(lang,locale);
+}
+function formatRate(value,currency,lang){
+  const locale={en:'en-US',es:'es-ES',pt:'pt-BR',fr:'fr-FR',de:'de-DE',it:'it-IT',ru:'ru-RU',ar:'ar',hi:'hi-IN',zh:'zh-CN',ja:'ja-JP',ko:'ko-KR',tr:'tr-TR',id:'id-ID'}[lang]||'en-US';
+  // Include the ISO code in plain text even if a locale shares a currency symbol.
+  return new Intl.NumberFormat(locale,{minimumFractionDigits:2,maximumFractionDigits:6,numberingSystem:'latn'}).format(value);
 }
 function localize(lang,en,es,pt){return lang==='es'?es:lang==='pt'?pt:en;}
 function failure(lang,kind,reason,link){
@@ -61,20 +76,24 @@ function failure(lang,kind,reason,link){
     `${kind} no está disponible temporalmente (${reason}). Consulta la fuente oficial: ${link}`,
     `${kind} está temporariamente indisponível (${reason}). Consulte a fonte oficial: ${link}`);
 }
-export async function livePrice({fetchImpl=fetch,lang='en'}={}){
+export async function livePrice({fetchImpl=fetch,lang='en',currency,locale='',fallbackToUsd=false}={}){
+  const code=String(priceCurrency({currency,lang,locale})).toUpperCase();
+  if(!isCurrencyCode(code))return ui(lang,'unsupported');
   try{
     const data=await json(RATE_URL,fetchImpl);
-    const usd=parseUsd(data);
-    if(usd===null)return failure(lang,'SUM/USD','unrecognized rate format',RATE_URL);
-    const formatted=usd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6});
-    return localize(lang,
-      `SUM reference index rate: $${formatted} USD per SUM\nChecked: ${UTC()}\nThis is an index reference, not a guaranteed sale or cash-out price.\nSource: ${RATE_URL}`,
-      `Valor de referencia del índice SUM: $${formatted} USD por SUM\nConsultado: ${UTC()}\nEs una referencia del índice, no un precio de venta ni retiro garantizado.\nFuente: ${RATE_URL}`,
-      `Taxa de referência do índice SUM: US$ ${formatted} por SUM\nConsultado: ${UTC()}\nÉ uma referência do índice, não um preço de venda ou saque garantido.\nFonte: ${RATE_URL}`);
-  }catch(err){return failure(lang,'SUM/USD',err.message,RATE_URL);}
+    let value=parseCurrency(data,code);
+    let actualCode=code;
+    if(value===null && fallbackToUsd && code!=='USD'){
+      value=parseCurrency(data,'USD');
+      actualCode='USD';
+    }
+    if(value===null)return `${ui(lang,'unavailable')} (${code})\n${ui(lang,'usage')}\n${ui(lang,'source')}: ${RATE_URL}`;
+    const rate=formatRate(value,actualCode,lang);
+    return `${ui(lang,'rate')}\n1 SUM ≈ ${rate} ${actualCode}\n${ui(lang,'trades')}\n${ui(lang,'checked')}: ${UTC()}\n${ui(lang,'source')}: ${RATE_URL}`;
+  }catch{return `${ui(lang,'failed')}\n${ui(lang,'source')}: ${RATE_URL}`;}
 }
 export async function liveTransaction(txid,{fetchImpl=fetch,lang='en'}={}){
-  if(!TXID_RE.test(txid||''))return localize(lang,'Usage: /tx 64-character hexadecimal transaction ID. Never share private keys.','Uso: /tx ID hexadecimal de transacción de 64 caracteres. No compartas claves privadas.','Uso: /tx ID hexadecimal de transação com 64 caracteres. Nunca compartilhe chaves privadas.');
+  if(!TXID_RE.test(txid||''))return explorerUI(lang,8);
   const path=`${EXPLORER}/api/tx/${txid.toLowerCase()}`;
   try{
     const data=await json(path,fetchImpl);
@@ -82,27 +101,23 @@ export async function liveTransaction(txid,{fetchImpl=fetch,lang='en'}={}){
     const n=safeNumber(data.confirmations);
     const conf=n!==null&&Number.isSafeInteger(n)&&n>=0?n:null;
     const block=Number.isSafeInteger(data.blockheight)&&data.blockheight>0?data.blockheight:Number.isSafeInteger(data.blockHeight)&&data.blockHeight>0?data.blockHeight:null;
-    const status=conf===null?localize(lang,'not verified','sin verificar','não verificado'):conf===0?localize(lang,'0 (unconfirmed)','0 (sin confirmar)','0 (não confirmada)'):`${conf}`;
-    return localize(lang,
-      `Transaction: ${txid.toLowerCase()}\nConfirmations: ${status}${block?'\nBlock height: '+block:''}\nChecked: ${UTC()}\nSource: ${path}`,
-      `Transacción: ${txid.toLowerCase()}\nConfirmaciones: ${status}${block?'\nAltura del bloque: '+block:''}\nConsultado: ${UTC()}\nFuente: ${path}`,
-      `Transação: ${txid.toLowerCase()}\nConfirmações: ${status}${block?'\nAltura do bloco: '+block:''}\nConsultado: ${UTC()}\nFonte: ${path}`);
-  }catch(err){return failure(lang,localize(lang,'Transaction','Transacción','Transação'),err.message,path);}
+    const status=conf===null?explorerUI(lang,7):String(conf);
+    return `${explorerUI(lang,0)}: ${txid.toLowerCase()}\n${explorerUI(lang,1)}: ${status}${block?'\n'+explorerUI(lang,2)+': '+block:''}\n${ui(lang,'checked')}: ${UTC()}\n${ui(lang,'source')}: ${path}`;
+  }catch{return `${ui(lang,'failed')}\n${ui(lang,'source')}: ${path}`;}
 }
 export async function liveAddress(address,{fetchImpl=fetch,lang='en'}={}){
-  if(!ADDRESS_RE.test(address||''))return localize(lang,'Usage: /address PUBLIC_SUM_ADDRESS. Never submit a seed, private key, or password. Addresses posted here are visible to everyone.','Uso: /address DIRECCIÓN_PÚBLICA. No publiques claves ni palabras de recuperación. La dirección será visible para todos.','Uso: /address ENDEREÇO_PÚBLICO. Não publique chaves nem palavras de recuperação. O endereço ficará visível para todos.');
+  if(!ADDRESS_RE.test(address||''))return `${explorerUI(lang,9)}. ${ui(lang,'safety')}`;
   const path=`${EXPLORER}/api/addr/${address}?noTxList=1`;
   try{
     const data=await json(path,fetchImpl);
-    if(!isPlain(data)|| (data.addrStr&&data.addrStr!==address))throw new Error('invalid address response');
-    // Require at least one Insight summary field; never treat a 200 HTML-ish message as a wallet.
+    if(!isPlain(data)||(data.addrStr&&data.addrStr!==address))throw new Error('invalid address response');
     const bal=safeNumber(data.balance), unconfirmed=safeNumber(data.unconfirmedBalance), ntx=safeNumber(data.txApperances??data.txAppearances);
     if(bal===null&&unconfirmed===null&&ntx===null)throw new Error('unrecognized address response');
-    const lines=[localize(lang,`Public address: ${address}`,`Dirección pública: ${address}`,`Endereço público: ${address}`)];
-    if(bal!==null&&bal>=0)lines.push(localize(lang,`Confirmed balance: ${bal} SUM`,`Saldo confirmado: ${bal} SUM`,`Saldo confirmado: ${bal} SUM`));
-    if(unconfirmed!==null)lines.push(localize(lang,`Unconfirmed balance: ${unconfirmed} SUM`,`Saldo sin confirmar: ${unconfirmed} SUM`,`Saldo não confirmado: ${unconfirmed} SUM`));
-    if(ntx!==null&&Number.isSafeInteger(ntx)&&ntx>=0)lines.push(localize(lang,`Transactions: ${ntx}`,`Transacciones: ${ntx}`,`Transações: ${ntx}`));
-    lines.push(`${localize(lang,'Checked','Consultado','Consultado')}: ${UTC()}`,`${localize(lang,'Source','Fuente','Fonte')}: ${path}`);
+    const lines=[`${explorerUI(lang,3)}: ${address}`];
+    if(bal!==null&&bal>=0)lines.push(`${explorerUI(lang,4)}: ${bal} SUM`);
+    if(unconfirmed!==null)lines.push(`${explorerUI(lang,5)}: ${unconfirmed} SUM`);
+    if(ntx!==null&&Number.isSafeInteger(ntx)&&ntx>=0)lines.push(`${explorerUI(lang,6)}: ${ntx}`);
+    lines.push(`${ui(lang,'checked')}: ${UTC()}`,`${ui(lang,'source')}: ${path}`);
     return lines.join('\n');
-  }catch(err){return failure(lang,localize(lang,'Address lookup','Consulta de dirección','Consulta de endereço'),err.message,path);}
+  }catch{return `${ui(lang,'failed')}\n${ui(lang,'source')}: ${path}`;}
 }

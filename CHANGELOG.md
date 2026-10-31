@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.7 — 2026-10-31
+
+- Rewrote high-traffic answers to describe the Sumcoin Index as a **peer-to-peer reference rate**: trades are arranged directly between participants. Removed repeating generic liquidity, bank and withdrawal cautions from unrelated queries while preserving recovery-key and scam protections where relevant.
+- `/price [CURRENCY]` uses exact currency records from the approved existing rate service (numeric `n`, matching ISO `code`), localized formatting and 14-language display. No synthetic conversion or guessed prices. Automatic currency defaults respect available regional locale tags; ambiguous generic languages are handled conservatively. Unsupported automatic currencies fall back to the explicitly sourced USD record, while explicitly selected unavailable currencies report the limitation.
+- `/currency CODE|auto` sets a member-only, in-memory 24-hour currency preference, separate from `/language`. A `/price CODE` one-time override doesn't alter the preference.
+- Added reviewed concise FAQs for 12 popular topics and eight wallet guides in 14 languages: English, Spanish, Portuguese, French, German, Italian, Russian, Arabic, Hindi, Chinese, Japanese, Korean, Turkish and Indonesian. Localized core `/help`, live price output and `/tx`/`/address` output. Specialized technical articles still display English when unreviewed translations are missing.
+- Expanded natural-language live-price detection across the 14 languages, including Korean script normalization. General index formula explanations still avoid accidentally triggering a live price request.
+- Retained observation mode, group restrictions, security filters, approved sources, no paid AI, non-root deployment, and current Telegram 429 retry behavior. Existing v0.0.6 tests remain, with updated assertions for intentional editorial improvements and new localization/FX/security regressions.
+
 ## 0.0.6 — 2026-10-31
 
 - Fixed `/price` to parse the live official `https://rate.slicewallet.org/api/rates` response: an array of currency records (`code`, `price`, `n`, `name`), selecting only the USD row's numeric `n` field.

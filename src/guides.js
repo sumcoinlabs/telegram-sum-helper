@@ -1,3 +1,5 @@
+import {GUIDE_SHORT,GUIDE_TITLES} from './guides-localized.js';
+import {ui} from './locale-ui.js';
 // Explicitly reviewed procedures. The bot never needs wallet secrets to guide users.
 // No guessed staking parameters, fee amounts, guaranteed availability, or account recovery promises.
 export const GUIDES=Object.freeze({
@@ -13,8 +15,8 @@ export const GUIDES=Object.freeze({
 export const GUIDE_ALIASES=Object.freeze({balance:'zero',missing:'zero',wallet:'zero',recovery:'restore',recover:'restore',transaction:'pending',tx:'pending',sync:'connect',electrum:'connect',legacy:'migration',slice:'migration',cashout:'trade',buy:'trade',sell:'trade'});
 export function guideReply(which,lang='en'){
   const id=GUIDES[which]?which:GUIDE_ALIASES[which];const g=GUIDES[id];
-  if(!g)return [lang==='es'?'Guías':lang==='pt'?'Guias':'Guides',...Object.keys(GUIDES).map(k=>`/guide ${k}`)].join('\n');
-  const parts=g[lang]||g.en;
-  const title=lang==='es'?'Pasos sugeridos':lang==='pt'?'Etapas recomendadas':'Suggested steps';
-  return `${title} — ${id}\n\n${parts.map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\n${lang==='es'?'Fuente':lang==='pt'?'Fonte':'Source'}: ${g.source}`;
+  if(!g)return [ui(lang,'guide'),...Object.keys(GUIDES).map(k=>`/guide ${k}`)].join('\n');
+  const parts=g[lang]||GUIDE_SHORT[lang]?.[id]||g.en;
+  const title=GUIDE_TITLES[lang]||GUIDE_TITLES.en;
+  return `${title} — ${id}\n\n${parts.map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\n${ui(lang,'source')}: ${g.source}`;
 }

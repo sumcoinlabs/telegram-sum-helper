@@ -3,19 +3,22 @@ import { citationUrls } from './knowledge.js';
 import { githubSearch } from './github.js';
 import { t, hasTranslation, normalizeLanguage, LANGUAGE_NAMES } from './languages.js';
 import { containsSecret } from './privacy.js';
-import { offlineAnswer,isContextualFollowup } from './offline.js';
+import { offlineAnswer,isContextualFollowup,reviewedFact } from './offline.js';
 import { guideReply } from './guides.js';
 import { livePrice,liveTransaction,liveAddress } from './live.js';
+import {ui,preferredCurrency} from './locale-ui.js';
 
 export function isCurrentPriceQuestion(q){
-  const text=String(q||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  return /(?:sumcoin|\bsum\b)/.test(text) &&
-    /(?:\bcurrent\b|\bright now\b|\btoday\b|\blive\b|\bnow\b|\batual\b|\bagora\b|\bhoje\b|\bactual\b|\bhoy\b)/.test(text) &&
-    /(?:\bprice\b|\brate\b|\bvalue\b|\bvalor\b|\bpreco\b|\bprecio\b|\bcotacao\b|\btaxa\b)/.test(text) &&
-    !/(?:\bhow\b|\bcomo\b).*?(?:\bcalculat|\bformula\b|\bindice\b|\bindex\b)/.test(text);
+  const text=String(q||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').normalize('NFC');
+  if(!/(?:sumcoin|\bsum\b)/u.test(text))return false;
+  const when=/(?:\bcurrent\b|\bright now\b|\btoday\b|\blive\b|\bnow\b|\batual\b|\bagora\b|\bhoje\b|\bactual\b|\bhoy\b|\baujourd\b|\bmaintenant\b|\bactuel\b|\bheute\b|\baktuell\b|\bjetzt\b|\boggi\b|\badesso\b|\battuale\b|\bbugun\b|\bsimdi\b|\bguncel\b|\bsekarang\b|\bterkini\b|hari ini|сегодня|сейчас|текущ|اليوم|الان|الحالي|आज|अभी|वर्तमान|现在|今天|今日|实时|目前|現在|今|지금|오늘|현재)/u;
+  const price=/(?:\bprice\b|\brate\b|\bvalue\b|\bvalor\b|\bpreco\b|\bprecio\b|\bcotacao\b|\btaxa\b|\bprix\b|\bcours\b|\bvaleur\b|\bpreis\b|\bkurs\b|\bwert\b|\bprezzo\b|\btasso\b|\bfiyat\b|\bdeger\b|\bharga\b|\bnilai\b|\bindeks\b|цена|курс|стоимость|سعر|قيمة|कीमत|मूल्य|दर|价格|汇率|价值|価格|レート|가격|시세)/u;
+  const calculation=/(?:\bhow\b|\bcomo\b|\bcomment\b|\bwie\b|\bcome\b).*?(?:\bcalculat|\bformula\b|\bindice\b|\bindex\b|\bindeks\b)|рассчитыв|расчет|كيفية حساب|كيف.*حساب|कैसे.*गणना|如何.*计算|怎么.*计算|計算|어떻게.*계산|nasıl.*hesap|bagaimana.*hitung/u;
+  return when.test(text)&&price.test(text)&&!calculation.test(text);
 }
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
-const HELP=`Sumcoin Helper v0.0.6 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price — live SUM/USD index reference\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid\n\nQuestions in any language are welcome. The USD index is NOT a bank deposit or guaranteed withdrawal. Never share seed words or keys. Admin commands remain English.`;
+const HELP=`Sumcoin Helper v0.0.7 — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate
+/currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/feedback — report an inaccurate answer (aggregated)\n\nGroup admins: /mode observe|reply, /stats, /feedbacks, /learn, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
 export function commandFrom(text,botUsername=''){
   const m=/^\/([a-z_]+)(?:@([a-z0-9_]+))?(?:\s+([\s\S]*))?$/i.exec(String(text||'').trim());
   if(!m||(m[2]&&m[2].toLowerCase()!==botUsername.toLowerCase()))return null;
@@ -39,7 +42,7 @@ export function isDirectedMention(text,botUsername){
   return start.test(text)||/[?¿؟？]/u.test(text);
 }
 export function createHandler({client,state,config,botUsername,knowledge,learning,ai,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress}}){
-  const preferences=new Map(),seenReplies=new Map(),topicHistory=new Map();
+  const preferences=new Map(),currencyPreferences=new Map(),seenReplies=new Map(),topicHistory=new Map();
   const now=()=>Date.now();
   async function send(m,text){return client.sendMessage(m,String(text).slice(0,3500));}
   async function admin(m){if(!m.from?.id||!inAllowedGroup(m.chat,config))return false;
@@ -50,10 +53,23 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     if(pref?.until>now())return pref.code;
     return detectLanguage(q||'',m.from?.language_code||'en');
   }
+  function currencyFor(m,lang,override=''){
+    if(override)return override;
+    const key=String(m.from?.id||m.sender_chat?.id||'');
+    const pref=currencyPreferences.get(key);
+    if(pref&&pref.until>now())return pref.code;
+    if(pref)currencyPreferences.delete(key);
+    return preferredCurrency(lang,m.from?.language_code||'');
+  }
+  function priceOptions(m,lang,override=''){
+    const pref=currencyPreferences.get(String(m.from?.id||m.sender_chat?.id||''));
+    return {lang,currency:currencyFor(m,lang,override),locale:m.from?.language_code||'',
+      fallbackToUsd:!override&&!(pref?.until>now())};
+  }
   function article(id,lang){
     const a=knowledge.find(id);if(!a)return t(lang,'none');
-    const fact=hasTranslation(lang,id)?t(lang,id):`${t(lang,'englishDetail')}\n${a.body}`;
-    return `${fact}\n\n${t(lang,'source')}: ${citationUrls([a],1)[0]||'https://sumcoin.org/'}`;
+    const body=reviewedFact(a,lang)||`${t(lang,'englishDetail')}\n${a.body}`;
+    return `${body}\n\n${t(lang,'source')}: ${citationUrls([a],1)[0]||'https://sumcoin.org/'}`;
   }
   // Remember only a curated topic ID, never message text or wallet details.
   // 30-minute user+chat scope, lost on restart and bounded to 500 records.
@@ -90,7 +106,7 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     const pref=preferences.get(String(m.from?.id||''));
     if((contextId||expanded)&&prior?.lang&&!(pref?.until>now()))lang=prior.lang;
     if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?config.userCooldownHours:0,automatic?config.topicCooldownSeconds:8))return;
-    if(isCurrentPriceQuestion(q))return send(m,await liveOps.price({lang}));
+    if(isCurrentPriceQuestion(q))return send(m,await liveOps.price(priceOptions(m,lang)));
     const retrievalQuery=ai.apiKey?ai.retrievalQuestion(key,q):q;
     const docs=knowledge.search(contextId?knowledge.find(contextId)?.title||q:retrievalQuery,{limit:12});
     if(contextId){
@@ -117,17 +133,42 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     const lang=languageFor(m,command?.arg||m.text);
     if(command){
       const name=command.name,arg=command.arg;
-      if(['start','help'].includes(name))return send(m,lang==='en'?HELP:`${t(lang,'need')}\n\n/ask <question> — Sumcoin answers\n/language <code> — response language\n/cashout — SUM versus USD\n/find — documentation\n/feedback — report a bot answer\n\n${t(lang,'security')}\n\n${t(lang,'englishDetail')}\n${HELP}`);
+      if(['start','help'].includes(name))return send(m,`${ui(lang,'help')}
+
+/ask <question>
+/more
+/guide zero|restore|pending|staking|connect|migration|fees|trade
+/price [USD|EUR|BRL|...]
+/currency CODE|auto
+/language CODE|auto
+/tx TXID
+/address PUBLIC_ADDRESS
+/find <keywords>
+/github <keywords>
+/sources
+/feedback
+
+${ui(lang,'safety')}`);
       if(['lang','language'].includes(name)){
         if(!arg)return send(m,`Your current reply language: ${LANGUAGE_NAMES[lang]||lang}. Choose /language en, es, pt, fr, de, it, ru, ar, hi, zh, ja, ko, tr or id; /language auto to reset.`);
         if(arg.toLowerCase()==='auto'){preferences.delete(String(m.from?.id||''));return send(m,'Automatic language detection enabled.');}
         const code=arg.toLowerCase();if(!Object.hasOwn(LANGUAGE_NAMES,code))return send(m,'Unsupported language code. Use /language for choices.');
         preferences.set(String(m.from?.id||''),{code,until:now()+24*3600000});return send(m,`Reply language: ${LANGUAGE_NAMES[code]}. Expires in 24 hours; not written to disk.`);
       }
+      if(name==='currency'){
+        const key=String(m.from?.id||m.sender_chat?.id||'');
+        const code=arg.trim().toUpperCase();
+        if(!code)return send(m,`${ui(lang,'selected')}: ${currencyFor(m,lang)}\n${ui(lang,'usage')}`);
+        if(code==='AUTO'){currencyPreferences.delete(key);return send(m,ui(lang,'reset'));}
+        if(!/^[A-Z]{3}$/.test(code))return send(m,ui(lang,'unsupported'));
+        currencyPreferences.set(key,{code,until:now()+24*3600000});
+        return send(m,`${ui(lang,'selected')}: ${code}\n${ui(lang,'usage')}`);
+      }
       if(name==='guide')return send(m,guideReply(arg.toLowerCase().trim(),lang));
       if(name==='price'){
-        if(!state.shouldReply(m,`live-price:${m.from?.id||'unknown'}`,0,12))return;
-        return send(m,await liveOps.price({lang}));
+        const override=arg.trim().toUpperCase();
+        if(override&&!/^[A-Z]{3}$/.test(override))return send(m,ui(lang,'unsupported'));
+        return send(m,await liveOps.price(priceOptions(m,lang,override)));
       }
       if(name==='tx'){
         if(containsSecret(arg))return send(m,t(lang,'security'));

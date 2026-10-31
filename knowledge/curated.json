@@ -23,7 +23,7 @@
         "saldo",
         "comprar"
       ],
-      "text": "Sumcoin Wallet holds SUM cryptocurrency, not bank deposits or a withdrawable US dollar balance. The displayed USD figure is an index-based reference valuation, not a guaranteed sale, payout or redemption price. Sending SUM between addresses is separate from exchanging it for fiat. To receive dollars you must independently find a willing buyer and agree terms; the wallet does not provide a USD withdrawal service. Never send coins to a stranger who claims to unlock a cash withdrawal.",
+      "text": "To exchange SUM for fiat currency, find a willing trading partner and agree on the payment method and amount. Sumcoin Wallet stores and transfers SUM; it does not provide a bank withdrawal feature. Check /price for the current peer-to-peer reference rate when discussing a trade.",
       "sources": [
         "https://sumcoinwallet.org/",
         "https://www.sumcoin.org/about/",
@@ -46,7 +46,7 @@
         "valuation",
         "rate"
       ],
-      "text": "Sumcoin describes SUM as a cryptocurrency with a reference value calculated from an algorithm tracking the top 100 cryptocurrencies by market capitalization. An algorithmic index rate is different from an executable sale price and does not imply exchange liquidity, a guaranteed buyer, or a redeemable US dollar balance. Live quotes should only be obtained from a current official rates service; do not treat static examples as current quotes.",
+      "text": "Sumcoin Index follows the 100 largest cryptocurrencies by market capitalization and publishes a reference valuation for SUM. People can exchange SUM directly with one another and agree on the actual rate for their transaction. Use /price for the current reference rate in your preferred currency. The reference is not an order book or an automatic exchange service.",
       "sources": [
         "https://www.sumcoin.org/about/",
         "https://github.com/sumcoinlabs/sumcoin"
@@ -70,7 +70,7 @@
         "goods",
         "services"
       ],
-      "text": "SUM can be transferred directly between compatible wallets to pay another person who agrees to accept SUM. The Sumcoin project describes peer-to-peer trade as a core use case, and lists a marketplace for people to offer goods and services. Availability of a buyer, seller, particular merchant, kiosk, or marketplace listing is not guaranteed. Check counterparty trust and confirm all details before sending coins.",
+      "text": "Sumcoin supports peer-to-peer payments between compatible wallets. Send SUM to someone who agrees to accept it; the payment is recorded on the Sumcoin network. Trading terms and any fiat payment are arranged between participants.",
       "sources": [
         "https://www.sumcoin.org/sumcoin-marketplace/",
         "https://www.sumcoin.org/about/"
@@ -91,7 +91,7 @@
         "self custody",
         "electrum"
       ],
-      "text": "The Sumcoin Wallet mobile application is described by its official website as a self-custody wallet using the Electrum protocol. Wallet users control their own recovery information; the developer is not a custodian or bank and cannot provide a fiat withdrawal. Use download links from the official Sumcoin Wallet site and verify the app before entering sensitive information.",
+      "text": "Sumcoin Wallet is a self-custody wallet for sending and receiving SUM using the Electrum protocol. Your recovery information controls access to the wallet, so keep it safely offline. The wallet does not itself exchange SUM for bank funds.",
       "sources": [
         "https://sumcoinwallet.org/",
         "https://github.com/sumcoinlabs/sumcoin_flutter"
@@ -224,7 +224,7 @@
         "send fee",
         "miner fee"
       ],
-      "text": "There is no fee to download the self-custody Sumcoin Wallet, but transferring SUM on the blockchain may require a network transaction fee. Fees are network costs and should not be confused with a payment required by someone claiming to unlock a USD withdrawal. Verify any fees presented by your installed compatible wallet rather than relying on old fee estimates on webpages.",
+      "text": "Sending SUM may require a network transaction fee. The wallet should display any applicable fee before you confirm. Fees depend on the current network and wallet rules; old proof-of-work documentation may not apply.",
       "sources": [
         "https://sumcoinwallet.org/",
         "https://www.sumcoin.org/faq/"
@@ -309,7 +309,7 @@
         "history",
         "2018"
       ],
-      "text": "Sumcoin is a peer-to-peer Layer 1 cryptocurrency with index-based reference valuation. Its development began in 2018 on proof-of-work and subsequently moved to proof-of-stake. SUM is a native blockchain currency, not an ownership share or a bank account. Payments are recorded on a distributed ledger and are generally irreversible after confirmation.",
+      "text": "Sumcoin is a layer-one peer-to-peer cryptocurrency. The project began with proof-of-work and later moved to proof-of-stake (PoS). SUM can be transferred directly between compatible wallets without requiring a centralized exchange account.",
       "sources": [
         "https://www.sumcoin.org/about/",
         "https://github.com/sumcoinlabs/sumcoin",
@@ -332,7 +332,7 @@
         "cash",
         "withdraw"
       ],
-      "text": "Sumcoin emphasizes direct peer-to-peer transfer and trading. The project mentions a marketplace and some participating crypto kiosks, but their current ability to buy or sell SUM must be confirmed independently. An index value is not a guaranteed sale price or liquid bid. The wallet itself is not an exchange, broker or cash withdrawal service; the bot cannot promise that any specific exchange or kiosk supports SUM.",
+      "text": "SUM can be bought or sold directly between people. Check the current peer-to-peer reference rate with /price, confirm the counterparty and payment method, and verify the receiving address before sending.",
       "sources": [
         "https://www.sumcoin.org/sumcoin-marketplace/",
         "https://sumcoinwallet.org/"
