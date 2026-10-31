@@ -1,3 +1,10 @@
+## 0.0.15 — 2026-10-31
+
+- Add optional Groq-hosted OpenAI GPT-OSS 120B Responses API, with fixed endpoint, separate API key and existing quota-protected offline fallback. Direct OpenAI remains supported; neither provider is enabled by default.
+- Preserve Sumcoin's deterministic live prices and reviewed project documentation as the authority; Groq never receives raw Telegram history or unreviewed synced pages as authoritative material.
+- Clarify ambiguous “pesos” questions and remember the same member's answer for five minutes, then resolve via the official live rate API; other members cannot hijack it.
+- Expand provider disclosures, operations and regression tests. No production VM data or credentials packaged.
+
 # Changelog
 
 ## v0.0.14 — code-first intelligence and guarded conversational mode

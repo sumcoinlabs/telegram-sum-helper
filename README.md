@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml/badge.svg"></a>
-  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.14"><img alt="Version 0.0.14" src="https://img.shields.io/badge/version-0.0.14-blue"></a>
+  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.15"><img alt="Version 0.0.15" src="https://img.shields.io/badge/version-0.0.15-blue"></a>
   <img alt="Node.js 20.11 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20.11-339933?logo=nodedotjs&logoColor=white">
   <img alt="14 supported locales" src="https://img.shields.io/badge/locales-14-0A73B7">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green"></a>
@@ -23,10 +23,10 @@
 - **Automatic help:** Replies to relevant, ordinary group questions; ignores general chat, announcements, and admin posts.
 - **Follow-up conversations:** “Can you tell me more?” expands *your own* recent bot answer. Reply directly to any bot answer to continue **that specific** topic. `/more` works too.
 - **14 localized support flows:** English, Spanish, Portuguese, French, German, Italian, Russian, Arabic, Hindi, Chinese, Japanese, Korean, Turkish, and Indonesian. Specialized topics may fall back to reviewed English text.
-- **Live SUM reference rates:** Currency names and codes (including yen/JPY); public read-only blockchain lookup via `/tx` and `/address`.
+- **Live SUM reference rates:** Currency names and codes (including yen/JPY); clarifies ambiguous “pesos” instead of guessing; public read-only blockchain lookup via `/tx` and `/address`.
 - **Verified knowledge:** Reviewed FAQs, official documentation, dated podcast transcripts, project updates, public GitHub documentation, news references, and optional X archives. Unreviewed sources are not automatically treated as current facts.
 - **Ongoing learning:** Privacy-filtered *new* group excerpts are stored on the VM; verified admin/developer answers become drafts until explicitly sourced and approved.
-- **Code-first, budget-safe answers:** Verified facts remain authoritative. Optional conversational OpenAI API calls are **disabled by default** and capped hourly/daily/monthly; fallback is free.
+- **Code-first, budget-safe answers:** Verified facts remain authoritative. Optional Groq (free-tier) or OpenAI API calls are **disabled by default** and capped hourly/daily/monthly; fallback is free.
 - **Reviewed corrections and reporting:** Admin `/correct` (reply to bot), `/approve`, `/revoke`, and `/weekly` provide an auditable learning cycle.
 
 ## Install or update

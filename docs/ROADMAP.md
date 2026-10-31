@@ -9,3 +9,5 @@
 **AI:** Generate explanations only when deliberately enabled with credits/billing, verified project context and three request caps. Offline, deterministic, source-linked answers always work when the model fails or is disabled. Hard request caps alone do not guarantee a fixed dollar spend.
 
 **Measure:** Use periodic anonymous weekly quality reports to see common questions, missing answers, feedback, review approvals, service reliability, and whether improvements reduce escalation. Focus future releases on intelligence and evaluation, not just adding FAQ items.
+
+**AI provider flexibility (v0.0.15):** Both Groq-hosted OpenAI open-weight GPT-OSS and direct OpenAI Responses API are supported. Provider never gets raw historic exports, server secrets, or unreviewed group discussion as facts. Live price and other fixed operations stay deterministic; ambiguous currencies are clarified by code before any generative call.

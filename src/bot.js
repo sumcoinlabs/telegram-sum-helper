@@ -9,7 +9,7 @@ import { livePrice,liveTransaction,liveAddress } from './live.js';
 import {ui,preferredCurrency} from './locale-ui.js';
 import {needsHumanReview,isDismissal,REVIEW_USERNAME} from './escalations.js';
 import {supportUI} from './support-ui.js';
-import {priceIntent,consensusIntent,consensusReply,isPoSConfirmation,consensusAnswerKind} from './intent.js';
+import {priceIntent,ambiguousPesoPrice,pesoClarificationCurrency,consensusIntent,consensusReply,isPoSConfirmation,consensusAnswerKind} from './intent.js';
 import {VERSION} from './version.js';
 import fs from 'node:fs';
 
@@ -63,7 +63,7 @@ export function isDirectedMention(text,botUsername){
   return start.test(text)||/[?¿؟？]/u.test(text);
 }
 export function createHandler({client,state,config,botUsername,knowledge,learning,ai,escalations=null,groupIndex=null,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress}}){
-  const preferences=new Map(),currencyPreferences=new Map(),seenReplies=new Map(),topicHistory=new Map(),answeredMessages=new Map(),mutedMembers=new Map(),adminCache=new Map();
+  const preferences=new Map(),currencyPreferences=new Map(),pendingPesos=new Map(),seenReplies=new Map(),topicHistory=new Map(),answeredMessages=new Map(),mutedMembers=new Map(),adminCache=new Map();
   const now=()=>Date.now();
   let lastWeeklyAttempt=0;
   async function send(m,text){return client.sendMessage(m,String(text).slice(0,3500));}
@@ -205,6 +205,29 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
   const CHAT_LIMIT=Number(config.aiDailyLimit??12);
   const HOUR_LIMIT=Number(config.aiHourlyLimit??4);
   const MONTH_LIMIT=Number(config.aiMonthlyLimit??60);
+  const pesoKey=m=>`${m.chat.id}:${m.from?.id||m.sender_chat?.id||0}`;
+  async function askPesos(m,q,lang){
+    if(!ambiguousPesoPrice(q))return false;
+    if(pendingPesos.size>=300){for(const [k,v] of pendingPesos)if(v.until<=now())pendingPesos.delete(k);
+      while(pendingPesos.size>=300)pendingPesos.delete(pendingPesos.keys().next().value);}
+    pendingPesos.set(pesoKey(m),{until:now()+5*60_000,lang});
+    await send(m,'Which pesos do you mean: Mexican (MXN), Argentine (ARS), Colombian (COP), Chilean (CLP), or Philippine (PHP)? Just reply with the country or code.');
+    return true;
+  }
+  async function finishPesos(m,q){
+    const key=pesoKey(m),pending=pendingPesos.get(key);
+    if(!pending)return false;
+    if(pending.until<=now()){pendingPesos.delete(key);return false;}
+    const currency=pesoClarificationCurrency(q);
+    if(!currency){
+      // Do not hijack an unrelated new question or accidentally assign a rate.
+      if(q.trim().length>55 || /[?¿？]/u.test(q))pendingPesos.delete(key);
+      return false;
+    }
+    pendingPesos.delete(key);
+    await sendTopic(m,await liveOps.price({...priceOptions(m,pending.lang,currency),amount:1}),'index-live',pending.lang);
+    return true;
+  }
   async function ask(m,q,{automatic=false,expanded=false,contextTopic=null,contextLanguage=null}={}){
     let lang=languageFor(m,q);
     if(!q||q.length>1000)return automatic?undefined:send(m,t(lang,'need'));
@@ -220,6 +243,8 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     const pref=preferences.get(String(m.from?.id||''));
     if((contextId||expanded)&&chosenPrior?.lang&&!(pref?.until>now()))lang=chosenPrior.lang;
     if(!state.shouldReply(m,automatic?'auto-ai':`${expanded?'ask-user-more':contextId?'ask-user-context':'ask-user'}:${m.from?.id||'unknown'}`,automatic?config.userCooldownHours:0,automatic?config.topicCooldownSeconds:0))return;
+    if(await finishPesos(m,q))return;
+    if(await askPesos(m,q,lang))return;
     const pricing=priceIntent(q);
     if(pricing)return sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang);
     if(consensusIntent(q))return sendTopic(m,consensusReply(lang,q),'chain',lang);
@@ -369,7 +394,7 @@ ${ui(lang,'safety')}`);
       }
       if(name==='stop'){if(!group)return;setMuted(m,true);return send(m,supportUI(lang,'muted'));}
       if(name==='resume'){if(!group)return;setMuted(m,false);return send(m,supportUI(lang,'resumed'));}
-      if(name==='privacy')return send(m,'This group helper privately indexes relevant new public group text for up to 90 days on the Sumcoin server, without member account IDs or names. An authorized historical Telegram export may also be reduced to anonymized one-way question-pattern fingerprints (maximum 1,000, without original message text or sender identities); these persist until removed by the operator. Seed phrases and obvious personal details are filtered, but no filter is perfect. Admin answers are drafts until reviewed. Reply to your own message with /forget to remove its saved group excerpt. /stop pauses automatic replies. '+(ai.apiKey?'When optional AI is enabled, explicitly directed questions and reviewed facts may be sent to OpenAI for an answer; do not include sensitive data.':'No external generative AI is currently enabled.'));
+      if(name==='privacy')return send(m,'This group helper privately indexes relevant new public group text for up to 90 days on the Sumcoin server, without member account IDs or names. An authorized historical Telegram export may also be reduced to anonymized one-way question-pattern fingerprints (maximum 1,000, without original message text or sender identities); these persist until removed by the operator. Seed phrases and obvious personal details are filtered, but no filter is perfect. Admin answers are drafts until reviewed. Reply to your own message with /forget to remove its saved group excerpt. /stop pauses automatic replies. '+(ai.apiKey?`When optional AI is enabled, explicitly directed questions and reviewed facts may be sent to ${ai.provider==='groq'?'Groq':'OpenAI'} for an answer; do not include sensitive data.`:'No external generative AI is currently enabled.'));
       if(name==='forget'){
         const own=m.reply_to_message?.from?.id&&m.from?.id===m.reply_to_message?.from?.id;
         if(!group||!own||!groupIndex)return send(m,'Reply to one of your own group messages with /forget to delete its saved excerpt.');
@@ -426,7 +451,7 @@ ${ui(lang,'safety')}`);
             return `${docs} documents${time?' | '+String(time).slice(0,16)+' UTC':''}${errors?' | '+errors+' unavailable':''}`;
           }catch{return 'not synchronized';}};
           return send(m,`Sumcoin Helper v${VERSION} | mode ${state.data.mode}
-Answer engine: ${ai.apiKey?'optional OpenAI API (opt-in) + verified offline fallback':'reviewed retrieval only (no API key)'}\nSource priority: deployed code / live chain, then reviewed project docs, then approved corrections\nAI caps: ${CHAT_LIMIT}/day, ${HOUR_LIMIT}/hour, ${MONTH_LIMIT}/month; ${state.data.aiRequests[new Date().toISOString().slice(0,10)]||0} used today
+Answer engine: ${ai.apiKey?`optional ${ai.provider==='groq'?'Groq GPT-OSS':'OpenAI'} API + verified offline fallback`:'reviewed retrieval only (no API key)'}\nSource priority: deployed code / live chain, then reviewed project docs, then approved corrections\nAI caps: ${CHAT_LIMIT}/day, ${HOUR_LIMIT}/hour, ${MONTH_LIMIT}/month; ${state.data.aiRequests[new Date().toISOString().slice(0,10)]||0} used today
 Approved community answers: ${learning.data.approved.length}
 Historical question patterns: ${Object.values(learning.data.patterns).filter(p=>p.historical).length}
 Official docs: ${describe('./data/synced.json')}
@@ -496,6 +521,8 @@ Private runtime data is not published to GitHub.`);
       return ask(m,q,{expanded:Boolean(topic&&isMoreRequest(q)),contextTopic:topic?.id,contextLanguage:topicLanguage});
     }
     if(containsSecret(m.text))return;
+    // Only the member who asked for pesos can resolve that pending question.
+    if(state.data.mode==='reply'&&!m.sender_chat&&!await admin(m)&&!isMuted(m)&&await finishPesos(m,m.text))return;
 
     // Follow a recent answer to THIS member only. A bare "tell me more"
     // without a recent answer remains ordinary chatter and is ignored.
@@ -513,7 +540,7 @@ Private runtime data is not published to GitHub.`);
     }
 
     const standaloneConsensus=/^(?:is|does|did|was|can|will|what|how)\b/i.test(m.text.trim())&&consensusIntent(m.text);
-    if(!isSupportMessage(m.text)&&!priceIntent(m.text)&&!standaloneConsensus)return;
+    if(!isSupportMessage(m.text)&&!priceIntent(m.text)&&!ambiguousPesoPrice(m.text)&&!standaloneConsensus)return;
     // Do not interrupt rhetorical, promotional, or off-topic Sumcoin chat.
     if(/^(?:do you (?:like|love)|who else (?:likes|loves)|isn't it (?:great|awesome)|sumcoin (?:to the moon|is awesome)|hey guys|good morning)\b/i.test(m.text.trim()))return;
     // No automatic messages to admins, anonymous admins, channel posts or opted-out members.
@@ -523,6 +550,7 @@ Private runtime data is not published to GitHub.`);
     if(topic)state.record(topic,false);
     state.recordLanguage(language);
     if(state.data.mode!=='reply')return;
+    if(await askPesos(m,m.text,language))return;
     const pricing=priceIntent(m.text);
     if(pricing){
       if(state.shouldReply(m,`auto:live-price:${pricing.currency||'auto'}:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang);}

@@ -66,6 +66,31 @@ const coin=/(?:\bsumcoin\b|\bsum\b|#sumcoin|\$sum|サムコイン|섬코인|苏�
 const pricing=/(?:\bprice\b|\brate\b|\bworth\b|\bvalue\b|\bquote\b|\bvalued\b|how much|how many (?:yen|euros?|dollars?|pounds?|rupees?|reais)|\bprecio\b|\bvalor\b|\bcotizaci|\bpreco\b|\bquanto vale\b|\bprix\b|\bpreis\b|\bprezzo\b|\bkurs\b|\bprecio\b|\bfiyat\b|\bharga\b|цена|стоимость|السعر|कीमत|价格|价值|価格|いくら|시세|가격)/iu;
 const formula=/(?:\bcalculat|\bformula\b|methodolog|\bindex.*(?:work|derive)|\bhow.*(?:track|weigh)|\bcomo.*calcul|\bcómo.*calcul|计算方法|計算方法)/iu;
 const transaction=/(?:\bmigrat|\bmigration\b|\bwithdraw|\bcash.out|\bstaking rewards?\b|\btransfer fee\b|\btransaction fee\b|\bbuy\b|\bsell\b|\bpay\b|\btax\b)/iu;
+
+// A peso is not a unique currency. Never silently choose a default country,
+// even when a member has a preferred UI currency.
+export function ambiguousPesoPrice(text){
+  const s=tokenize(text);
+  if(!coin.test(s)||transaction.test(s)||formula.test(s)||requestedCurrency(s))return false;
+  if(!/(?:^|[^\p{L}])pesos?(?=$|[^\p{L}])/u.test(s))return false;
+  return pricing.test(s)||/(?:\b(?:what|whats|what.s|how much|convert|show|tell)\b.*\b(?:sumcoin|sum)\b.*\b(?:in|to|into)\b)/iu.test(s);
+}
+const PESO_FOLLOWUPS={
+  mexican:'MXN',mexico:'MXN',mexicanos:'MXN',mexicanas:'MXN',
+  argentine:'ARS',argentinian:'ARS',argentina:'ARS',argentinos:'ARS',
+  colombian:'COP',colombia:'COP',colombianos:'COP',
+  chilean:'CLP',chile:'CLP',chilenos:'CLP',
+  philippine:'PHP',filipino:'PHP',filipinos:'PHP',philippines:'PHP'
+};
+export function pesoClarificationCurrency(text){
+  const s=tokenize(text).trim().replace(/[.!?]+$/,'').trim();
+  if(s.length>55)return null;
+  const named=requestedCurrency(s);
+  if(['MXN','ARS','COP','CLP','PHP'].includes(named))return named;
+  const bare=s.replace(/^(?:the|in|to|for|i mean|i meant|they.re|its|it.s|yes|please)\s+/i,'')
+    .replace(/\s+pesos?$/,'').trim();
+  return PESO_FOLLOWUPS[bare]||null;
+}
 export function priceIntent(q){
   const s=tokenize(q);if(!coin.test(s)||formula.test(s)||transaction.test(s))return null;
   const explicit=requestedCurrency(q);
