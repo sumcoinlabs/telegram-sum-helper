@@ -14,16 +14,16 @@ import {VERSION} from '../src/version.js';
 const fixture=()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'sum-v014-'));return {dir,clean:()=>fs.rmSync(dir,{recursive:true,force:true})};};
 
 test('v014 version, protected publisher and branded concise README',()=>{
- assert.equal(VERSION,'0.0.22');
+ assert.equal(VERSION,'0.0.23');
  const script=fs.readFileSync(new URL('../scripts/push-update.sh',import.meta.url),'utf8');
- assert.match(script,/0570860f47a7f623b11a779b86487af687be8c97/);
- assert.match(script,/CURRENT.*0\.0\.21/);
- assert.match(script,/CURRENT.*0\.0\.21/);
+ assert.match(script,/3a21d628030744d932d6546061b56af6fbc33750/);
+ assert.match(script,/CURRENT.*0\.0\.22/);
+ assert.match(script,/CURRENT.*0\.0\.22/);
  assert.match(script,/git rev-parse HEAD/);
  assert.doesNotMatch(script,/git push --force/);
  const readme=fs.readFileSync(new URL('../README.md',import.meta.url),'utf8');
  assert.match(readme,/sumcoin_400x400\.png/);
- assert.match(readme,/version-0\.0\.22/);
+ assert.match(readme,/version-0\.0\.23/);
  assert.ok(readme.split('\n').length<100);
 });
 

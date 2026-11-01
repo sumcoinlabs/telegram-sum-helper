@@ -12,7 +12,7 @@ import {supportUI} from './support-ui.js';
 import {priceIntent,ambiguousPesoPrice,pesoClarificationCurrency,consensusIntent,consensusReply,isPoSConfirmation,consensusAnswerKind} from './intent.js';
 import {VERSION} from './version.js';
 import {needsConversationalAnswer} from './auto-ai.js';
-import {marketIntent,marketAnswer,MarketHistory,MARKET_SITE,MARKET_CHART} from './market-insights.js';
+import {marketIntent,marketAnswer,marketFollowupCandidate,MarketHistory,MARKET_SITE,MARKET_CHART} from './market-insights.js';
 import fs from 'node:fs';
 
 
@@ -67,7 +67,7 @@ function friendlyAnswer(lang){
 }
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
 const HELP=`Sumcoin Helper v${VERSION} — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate\nAsk naturally about Sumcoin price history, historical highs or comparisons
-/currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/engine (admin, reply to bot answer) — show which engine answered\n/feedback — report an inaccurate answer (aggregated)\n/stop — pause automatic help for 24 hours; /resume — turn it on again\n\nGroup admins: /mode observe|reply, /stats, /weekly, /feedbacks, /learn, /correct (reply), /revoke ID, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid, /queue\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
+/currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/engine (admin, reply to bot answer) — show which engine answered\n/diagnostics (admin) — show AI configuration and last call\n/why (admin, reply to message) — explain local routing\n/feedback — report an inaccurate answer (aggregated)\n/stop — pause automatic help for 24 hours; /resume — turn it on again\n\nGroup admins: /mode observe|reply, /stats, /weekly, /feedbacks, /learn, /correct (reply), /revoke ID, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid, /queue\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
 export function commandFrom(text,botUsername=''){
   const m=/^\/([a-z_]+)(?:@([a-z0-9_]+))?(?:\s+([\s\S]*))?$/i.exec(String(text||'').trim());
   if(!m||(m[2]&&m[2].toLowerCase()!==botUsername.toLowerCase()))return null;
@@ -92,6 +92,17 @@ export function isDirectedMention(text,botUsername){
 }
 export function createHandler({client,state,config,botUsername,knowledge,learning,ai,escalations=null,groupIndex=null,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress},marketHistory=new MarketHistory()}){
   const preferences=new Map(),currencyPreferences=new Map(),pendingPesos=new Map(),seenReplies=new Map(),answerOrigins=new Map(),topicHistory=new Map(),answeredMessages=new Map(),marketByMember=new Map(),marketByReply=new Map(),recentConversations=new Map(),mutedMembers=new Map(),adminCache=new Map();
+  // Diagnostic metadata is ephemeral, bounded and never contains member text.
+  const routingHistory=new Map();
+  let lastModel=null;
+  function route(m,detail){
+    if(!inAllowedGroup(m?.chat,config)||!Number.isSafeInteger(m?.message_id))return;
+    const key=`${m.chat.id}:${m.message_id}`;
+    routingHistory.set(key,{detail,until:Date.now()+60*60_000});
+    if(routingHistory.size>500){for(const [k,v] of routingHistory)if(v.until<=Date.now())routingHistory.delete(k);
+      while(routingHistory.size>500)routingHistory.delete(routingHistory.keys().next().value);}
+  }
+  function noteModel(purpose,status){lastModel={purpose,status,at:new Date().toISOString()};}
   const now=()=>Date.now();
   let lastWeeklyAttempt=0;
   async function send(m,text){return client.sendMessage(m,String(text).slice(0,3500));}
@@ -206,6 +217,7 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
   // gets the correct context without sharing anyone's private conversation.
   async function sendTopic(m,text,id,lang,origin='local'){
     const result=await send(m,text);
+    route(m,origin==='groq'?'Answered by Groq using reviewed project sources':origin==='live'?'Answered from verified live API':origin==='fallback'?'Answered with reviewed local fallback':'Answered from verified local knowledge');
     state.noteOutcome('answered');
     if(origin==='live')state.noteOutcome('live');
     else if(origin==='local')state.noteOutcome('local');
@@ -294,6 +306,51 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
   const HOUR_LIMIT=Number(config.aiHourlyLimit??4);
   const MONTH_LIMIT=Number(config.aiMonthlyLimit??60);
   const pesoKey=m=>`${m.chat.id}:${m.from?.id||m.sender_chat?.id||0}`;
+  function marketClarification(lang){
+    const messages={
+      en:'I can check Sumcoin’s current index value, 24-hour change, weekly or monthly performance, and all-time high. Which period do you want?',
+      es:'Puedo consultar el valor actual del índice Sumcoin, su cambio en 24 horas, su evolución semanal o mensual y su máximo histórico. ¿Qué período quieres?',
+      pt:'Posso consultar o índice atual da Sumcoin, a variação de 24 horas, o desempenho semanal ou mensal e a máxima histórica. Qual período você quer?',
+      fr:'Je peux consulter l’indice Sumcoin actuel, son évolution sur 24 heures, une semaine ou un mois, et son sommet historique. Quelle période souhaitez-vous ?',
+      de:'Ich kann den aktuellen Sumcoin-Index, die Veränderung über 24 Stunden, die Wochen- oder Monatsentwicklung und das Allzeithoch prüfen. Welchen Zeitraum meinst du?',
+      it:'Posso controllare l’indice Sumcoin attuale, la variazione nelle 24 ore, l’andamento settimanale o mensile e il massimo storico. Quale periodo ti interessa?',
+      ru:'Я могу проверить текущий индекс Sumcoin, изменение за 24 часа, динамику за неделю или месяц и исторический максимум. Какой период нужен?',
+      ar:'يمكنني التحقق من مؤشر سومكوين الحالي وتغيره خلال 24 ساعة والأداء الأسبوعي أو الشهري وأعلى مستوى تاريخي. ما الفترة التي تقصدها؟',
+      hi:'मैं Sumcoin का वर्तमान इंडेक्स, पिछले 24 घंटों का बदलाव, साप्ताहिक या मासिक प्रदर्शन और ऐतिहासिक उच्चतम स्तर देख सकता हूँ। कौन-सी अवधि चाहिए?',
+      zh:'我可以查询 Sumcoin 当前指数、过去 24 小时的变化、周度或月度表现及历史最高值。你想看哪个时间段？',
+      ja:'Sumcoin の現在の指数、過去24時間の変化、週間・月間の推移、過去最高値を確認できます。どの期間を知りたいですか？',
+      ko:'Sumcoin의 현재 지수, 최근 24시간 변동, 주간 또는 월간 성과, 역대 최고치를 확인할 수 있습니다. 어느 기간이 궁금하신가요?',
+      tr:'Sumcoin’in güncel endeks değerini, son 24 saatlik değişimini, haftalık veya aylık performansını ve tüm zamanların zirvesini kontrol edebilirim. Hangi dönem?',
+      id:'Saya bisa memeriksa nilai indeks Sumcoin saat ini, perubahan 24 jam, kinerja mingguan atau bulanan, dan rekor tertinggi. Periode mana yang Anda maksud?'
+    };
+    return messages[lang]||messages.en;
+  }
+  // Called only for an explicitly market-related question or a recent member
+  // market follow-up that deterministic routing could not understand. Even if
+  // Groq is unavailable, this asks for clarification instead of silently dropping it.
+  async function clarifyUnmatchedMarket(m,q){
+    if(!marketFollowupCandidate(q,{active:Boolean(lastMarket(m))}))return false;
+    if(!state.shouldReply(m,`auto:market-clarification:${m.from?.id||0}`,0.00056,0)){
+      route(m,'Ignored: temporary market clarification cooldown');return true;
+    }
+    if(config.autoAI&&ai.apiKey&&state.consumeAiQuota(CHAT_LIMIT,HOUR_LIMIT,MONTH_LIMIT)){
+      try{
+        noteModel('market-intent','requested');
+        const intent=await ai.interpretMarketIntent(q,{active:Boolean(lastMarket(m))});
+        noteModel('market-intent','success');state.noteOutcome('ai');
+        if(intent?.kind==='price'){
+          const lang=languageForMarket(m,q);
+          await sendTopic(m,await liveOps.price({...priceOptions(m,lang),amount:1}),'index-live',lang,'live');
+          route(m,'Groq interpreted the intent; verified live-rate API supplied the price');return true;
+        }
+        if(intent){await sendMarket(m,intent,languageForMarket(m,q));
+          route(m,'Groq interpreted the intent; verified history API supplied the answer');return true;}
+      }catch(err){noteModel('market-intent','failed');console.warn('Market intent AI unavailable:',err.message);state.noteOutcome('ai-fallback');}
+    }
+    await sendTopic(m,marketClarification(languageForMarket(m,q)),null,languageForMarket(m,q),'local');
+    route(m,'No confident market period identified; clarification sent without invented data');
+    return true;
+  }
   async function askPesos(m,q,lang){
     if(!ambiguousPesoPrice(q))return false;
     if(pendingPesos.size>=300){for(const [k,v] of pendingPesos)if(v.until<=now())pendingPesos.delete(k);
@@ -337,6 +394,7 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     if(market)return sendMarket(m,market,languageForMarket(m,q));
     const pricing=priceIntent(q);
     if(pricing)return sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang,'live');
+    if(marketFollowupCandidate(q,{active:Boolean(lastMarket(m))})){await clarifyUnmatchedMarket(m,q);return;}
     if(consensusIntent(q))return sendTopic(m,consensusReply(lang,q),'chain',lang,'local');
     const retrievalQuery=ai.apiKey?ai.retrievalQuestion(key,q):q;
     const docs=knowledge.search(contextId?knowledge.find(contextId)?.title||q:retrievalQuery,{limit:12});
@@ -369,9 +427,11 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
       // into the generative model as authority or executable instructions.
       const reviewedContext=docs.filter(d=>d.kind==='curated'||d.kind==='admin-approved');
       if(!reviewedContext.length){state.noteOutcome('offline');return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang);}
+      noteModel('reviewed-answer','requested');
       const answer=await ai.answer({question:q,context:reviewedContext,historyKey:key,language:lang});
+      noteModel('reviewed-answer','success');
       await sendTopic(m,answer.text,contextId||primary?.id,lang,'groq');state.record('answered-ai',true);state.noteOutcome('ai');
-    }catch(err){console.error('AI unavailable:',err.message);
+    }catch(err){noteModel('reviewed-answer','failed');console.error('AI unavailable:',err.message);
       state.noteOutcome('offline');state.noteOutcome('ai-fallback');return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang,'fallback');}
   }
   const handle=async function handle(m){
@@ -529,6 +589,17 @@ ${ui(lang,'safety')}`);
         seenReplies.set(key,now()+86400000);if(seenReplies.size>1500)for(const [k,v] of seenReplies)if(v<now())seenReplies.delete(k);
         state.addFeedback(Number(m.reply_to_message.message_id));return send(m,'Feedback saved for administrator review. Only the bot reply ID was recorded; no member text.');
       }
+      if(name==='diagnostics'){
+        if(!group||!await admin(m,true,false))return send(m,'Only group administrators can view diagnostics.');
+        const at=new Date().toISOString();const day=at.slice(0,10),hour=at.slice(0,13),month=at.slice(0,7);
+        return send(m,`Sumcoin Helper v${VERSION} diagnostics\nMode: ${state.data.mode}\nAI provider: ${ai.provider}\nAI credentials configured: ${Boolean(ai.apiKey)}\nAutomatic Groq explanations + market intent: ${Boolean(config.autoAI&&ai.apiKey)}\nAI requests used: ${state.data.aiHours[hour]||0}/${HOUR_LIMIT} this hour; ${state.data.aiRequests[day]||0}/${CHAT_LIMIT} today; ${state.data.aiMonths[month]||0}/${MONTH_LIMIT} this month\nLast model attempt: ${lastModel?`${lastModel.at} | ${lastModel.purpose} | ${lastModel.status}`:'none since process start'}\nReply /engine to a bot answer for its source. Reply /why to an incoming message for its routing decision.\nDiagnostics are in memory; no message content is stored.`);
+      }
+      if(name==='why'){
+        if(!group||!await admin(m,true,false))return send(m,'Only group administrators can inspect routing.');
+        const id=m.reply_to_message?.message_id;
+        const item=Number.isSafeInteger(id)?routingHistory.get(`${m.chat.id}:${id}`):null;
+        return send(m,item&&item.until>now()?`Routing: ${item.detail}`:'Reply to a group message with /why. Only messages received since the last restart (up to one hour) are available.');
+      }
       if(name==='engine'){
         if(!group||!await admin(m,true,false))return send(m,'Only group administrators can inspect answer provenance.');
         const id=m.reply_to_message?.message_id;
@@ -615,6 +686,7 @@ Private runtime data is not published to GitHub.`);
       if(isFriendlyCheckin(q)&&!containsSecret(q))return sendTopic(m,friendlyAnswer(languageFor(m,q)),null,languageFor(m,q),'local');
       const market=memberMarketRequest(m,q);
       if(market)return sendMarket(m,market,languageForMarket(m,q));
+      if(marketFollowupCandidate(q,{active:Boolean(lastMarket(m))}))return clarifyUnmatchedMarket(m,q);
       const topic=repliedToBot&&isContextualFollowup(q)?repliedTopic(m):null;
       const myPrior=recentTopic(m);
       const topicLanguage=topic&&myPrior?.id===topic.id?myPrior.lang:languageFor(m,q);
@@ -652,7 +724,8 @@ Private runtime data is not published to GitHub.`);
 
     const marketRequest=memberMarketRequest(m,m.text);
     const standaloneConsensus=/^(?:is|does|did|was|can|will|what|how)\b/i.test(m.text.trim())&&consensusIntent(m.text);
-    if(!marketRequest&&!isSupportMessage(m.text)&&!priceIntent(m.text)&&!ambiguousPesoPrice(m.text)&&!standaloneConsensus&&!(needsConversationalAnswer(m.text)&&/(?:\bsumcoins?\b|\bsum\b|\bslice\b)/i.test(m.text)))return;
+    const unclearMarket=marketFollowupCandidate(m.text,{active:Boolean(lastMarket(m))});
+    if(!marketRequest&&!unclearMarket&&!isSupportMessage(m.text)&&!priceIntent(m.text)&&!ambiguousPesoPrice(m.text)&&!standaloneConsensus&&!(needsConversationalAnswer(m.text)&&/(?:\bsumcoins?\b|\bsum\b|\bslice\b)/i.test(m.text)))return;
     // Do not interrupt rhetorical, promotional, or off-topic Sumcoin chat.
     if(/^(?:do you (?:like|love)|who else (?:likes|loves)|isn't it (?:great|awesome)|sumcoin (?:to the moon|is awesome)|hey guys|good morning)\b/i.test(m.text.trim()))return;
     // Group announcements by admins stay quiet. A clearly phrased live-price
@@ -662,7 +735,7 @@ Private runtime data is not published to GitHub.`);
       (/[?¿？]/u.test(m.text)||/^(?:what(?:['’]?s| is)|whats|how much|show(?: me)?|tell me|give me|could you|can you)\b/iu.test(m.text.trim())));
     // Chart/API discovery is safe for an admin who explicitly asks, but never
     // respond to bare announcements containing a market-data link.
-    const adminMarketQuestion=Boolean(marketRequest);
+    const adminMarketQuestion=Boolean(marketRequest||unclearMarket);
     if(m.sender_chat||isMuted(m)||(await admin(m)&&!adminPriceQuestion&&!adminMarketQuestion))return;
     const {topic,language}=classify(m.text,m.from?.language_code);
     if(config.learningEnabled!==false)learning.observe(m.text,topic,language);
@@ -679,6 +752,7 @@ Private runtime data is not published to GitHub.`);
       if(state.shouldReply(m,`auto:live-price:${pricing.currency||'auto'}:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,await liveOps.price({...priceOptions(m,lang,pricing.currency||''),amount:pricing.amount}),'index-live',lang,'live');}
       return;
     }
+    if(unclearMarket){await clarifyUnmatchedMarket(m,m.text);return;}
     if(consensusIntent(m.text)){
       if(state.shouldReply(m,`auto:consensus:${consensusAnswerKind(m.text)}:${m.from?.id}`,0.00056,0)){const lang=languageFor(m,m.text);await sendTopic(m,consensusReply(lang,m.text),'chain',lang,'local');}
       return;
@@ -715,6 +789,11 @@ Private runtime data is not published to GitHub.`);
     // One short acknowledgement, with no misleading claims about the answer.
     await send(m,`I’m checking this with @${REVIEW_USERNAME}. If it remains unanswered, I’ll share the closest verified information here.`);
   };
-  handle.tick=tick;
-  return handle;
+  const handleWithDiagnostics=async m=>{
+    route(m,'Ignored: no eligible recognized question, or message suppressed by admin/mode/cooldown rules');
+    try {return await handle(m);}
+    catch(err){route(m,'Failed while processing message (check service logs)');throw err;}
+  };
+  handleWithDiagnostics.tick=tick;
+  return handleWithDiagnostics;
 }

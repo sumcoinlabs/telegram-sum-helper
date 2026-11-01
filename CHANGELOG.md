@@ -1,3 +1,11 @@
+## v0.0.23 — Conversational follow-ups, Groq guardrails and diagnostics (2026-10-31)
+
+- Fix the real Telegram exchange "whats the price of sumcoin" followed by "whats the change over the last day" for the same member, using the verified one-day market-history endpoint rather than AI-generated figures.
+- Add narrow, opt-in and quota-enforced Groq market-intent classification only for unrecognized market-specific questions. A model can choose only approved intents; it never supplies a price, volume, ATH or performance value. Unavailable or ambiguous model results trigger a safe clarification instead of silent failure.
+- Add administrator-only `/diagnostics` and `/why` to inspect automatic-AI configuration, last model attempt, quota usage and ephemeral per-message routing, without storing member message text.
+- Strip model-generated Markdown stars and fabricated numeric source markers; the application continues to append allowlisted verified URLs. Preserve 14 languages, local source authority, privacy filtering and all previous functionality.
+- Regression tests include the reported chat sequence, same-member follow-up isolation, optional Groq classifier, failure/disabled behavior, local API authority and user-facing answer formatting.
+
 ## v0.0.22 — Natural daily market status and targeted conversation (2026-10-31)
 
 - Answer “hows sumcoin doing today” and equivalent daily performance questions with independently validated trailing-24-hour SUM/USD index change, high, low and SumcoinPrice chart source. No invented quotes, no mistaken calendar-day claims and no Groq quota use.

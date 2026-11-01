@@ -34,14 +34,27 @@ const differentAsset = /\b(?:bitcoin|btc|ethereum|ether|eth|dogecoin|doge|liteco
 
 const rangeFrom = s => {
   if(/\b(?:five years|5 years|5y|cinco anos|cinq ans|funf jahre)\b/u.test(s))return '5y';
-  if(/\b(?:past year|last year|one year|1 year|12 months|1y|ano passado|ultimo ano|ano anterior|dernier an|derniere annee|letzte jahr|ultimo anno|ultimo ano|annee derniere|año pasado|ultimo año|tahun lalu|gecen yil)\b|去年|昨年|작년| पिछले साल/u.test(s))return '1y';
+  if(/\b(?:past year|last year|this year|one year|1 year|12 months|1y|ano passado|ultimo ano|ano anterior|dernier an|derniere annee|letzte jahr|ultimo anno|ultimo ano|annee derniere|año pasado|ultimo año|tahun lalu|gecen yil)\b|去年|昨年|작년| पिछले साल/u.test(s))return '1y';
   if(/\b(?:three months|3 months|3m)\b/u.test(s))return '3m';
   if(/\b(?:six months|6 months|6m)\b/u.test(s))return '6m';
-  if(/\b(?:past month|last month|one month|1 month|30 days|1m|dernier mois|mes pasado|ultimo mes|ultimo mes|ultimo mes|letzten monat|ultimo mese|bulan lalu)\b|先月|지난달/u.test(s))return '1m';
-  if(/\b(?:past week|last week|one week|7 days|1w|derniere semaine|semaine derniere|semana passada|semana pasada|letzte woche|minggu lalu)\b|先週|지난주/u.test(s))return '1w';
-  if(/\b(?:today|24 hours|24h|1 day|yesterday|1d|aujourd|hoy|hoje|heute|oggi|hari ini)\b|今日|今天|오늘/u.test(s))return '1d';
+  if(/\b(?:past month|last month|this month|one month|1 month|30 days|1m|dernier mois|mes pasado|ultimo mes|ultimo mes|ultimo mes|letzten monat|ultimo mese|bulan lalu)\b|先月|지난달/u.test(s))return '1m';
+  if(/\b(?:past week|last week|this week|one week|7 days|1w|derniere semaine|semaine derniere|semana passada|semana pasada|letzte woche|minggu lalu)\b|先週|지난주/u.test(s))return '1w';
+  if(/\b(?:today|24 hours|24h|1 day|one day|last day|past day|previous day|over the day|the last day|day ago|yesterday|since yesterday|1d|aujourd|hoy|hoje|heute|oggi|hari ini)\b|今日|今天|오늘/u.test(s))return '1d';
   return null;
 };
+// Only clearly market-related questions may use the optional AI intent fallback.
+// Group conversations and third-party coin questions must not reach the model.
+export function marketFollowupCandidate(question,{active=false}={}) {
+  const s=normalize(question).slice(0,250);
+  if(!s||!ask.test(s)||differentAsset.test(s)&&!coin.test(s))return false;
+  // Explanations, support requests and index-methodology questions must go
+  // through vetted FAQ/Groq-answer paths, NOT the market data classifier.
+  if(/\b(?:why|explain|explanation|formula|calculate|calculated|methodology|liquidity|cashout|withdraw|wallet|staking|migration|buy|sell)\b|\bhow (?:does|do)\b/iu.test(s))return false;
+  if(!active&&!coin.test(s))return false;
+  if(!coin.test(s)&&!/(?:\b(?:it|its|that|the coin|the index|the price|the value|the market)\b)/u.test(s)
+     &&!/(?:\b(?:change|movement|momentum|performance|trend|return|gain|loss)\b)/u.test(s))return false;
+  return /\b(?:price|rate|value|quote|market|worth|change|changed|movement|move|moved|momentum|performance|perform|trend|trending|gain|gained|lost|loss|return|high|low|peak|history|chart|up or down|rising|falling)\b/iu.test(s);
+}
 export function marketIntent(question, {active=false}={}) {
   const s=normalize(question).slice(0,1000);
   const daily=dailyOverview.test(s)||dailyOverviewLocalized.test(s.replace(/^[¿¡\s]+/u,''));

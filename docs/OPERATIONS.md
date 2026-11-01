@@ -139,6 +139,13 @@ The private Groq installer specifies `User-Agent: SumcoinHelper/0.0.18` to avoid
 
 A successfully delivered live-price response creates a 20-minute in-memory market context for the same member, enabling natural follow-ups such as “what was the all time high”. A narrowly phrased standalone English ATH question is recognized in the dedicated Sumcoin group. Historical values are calculated from SumcoinPrice's validated OHLC history. The bot does not infer another asset's ATH or share a member's vague conversation context across members.
 
+## v0.0.23 conversational routing and Groq transparency
+
+- "whats the change over the last day" after a price quote resolves to verified trailing-24-hour performance for the same member, without a Groq call. Other recognized periods remain deterministic.
+- When `AUTO_AI=true` and model credentials are configured, only unclear, genuinely market-related questions can use a single quota-counted model request to classify intent. Model output is an enum, not a market fact. All historical figures and live prices continue to come exclusively from the validated public APIs. If the model is unavailable or uncertain, the bot asks a simple clarification without inventing figures.
+- Group admins can send `/diagnostics` to inspect model configuration, quota use and last attempted model call. Reply to a group message with `/why` to inspect ephemeral routing (one hour / max 500 decisions); reply to a bot answer with `/engine` for answer provenance. Neither inspection stores raw message text.
+- Model-generated Markdown emphasis and fake numbered `Sources` lines are cleaned up; approved source URLs are appended by the application. Optional Groq still requires `AI_ENABLED=true` and `AUTO_AI=true` in the private `.env` for automatic use. Direct `/ask` can use AI even with `AUTO_AI=false`.
+
 ## v0.0.22 group conversational routing
 
 A clearly worded daily SUM market-status question routes to `range=1d&pair=usd`, reports trailing-24-hour index performance and verifies the response. A casual check-in without a command responds only if the same member has received a bot answer in the past 90 seconds, or explicitly mentions/replies to the bot. Never respond to generic chat among other group members. These paths do not invoke Groq. Admin messages still suppress unsolicited chatter.
