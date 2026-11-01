@@ -39,6 +39,32 @@ export function isCurrentPriceQuestion(q){
   const calculation=/(?:\bhow\b|\bcomo\b|\bcomment\b|\bwie\b|\bcome\b).*?(?:\bcalculat|\bformula\b|\bindice\b|\bindex\b|\bindeks\b)|рассчитыв|расчет|كيفية حساب|كيف.*حساب|कैसे.*गणना|如何.*计算|怎么.*计算|計算|어떻게.*계산|nasıl.*hesap|bagaimana.*hitung/u;
   return when.test(text)&&price.test(text)&&!calculation.test(text);
 }
+// Conversational check-ins are ONLY considered after this member just spoke
+// to the bot, or explicitly addressed/replied to it. Never answer incidental
+// greetings between group members or require a Groq call for small talk.
+export function isFriendlyCheckin(input){
+  const q=String(input||'').toLowerCase().replace(/[’‘]/g,"'").trim();
+  return /^(?:(?:hi|hey)[,! ]+)?(?:how[' ]?s|how is|how has) your day (?:going|been|treating you)[?.!]*$|^(?:how are you(?: doing)?|how[' ]?s it going|you doing okay|are you doing okay)[?.!]*$/iu.test(q);
+}
+function friendlyAnswer(lang){
+  const replies={
+    en:'All good here—thanks for asking! How about you?',
+    es:'¡Todo bien por aquí, gracias por preguntar! ¿Y tú?',
+    pt:'Tudo bem por aqui, obrigado por perguntar! E você?',
+    fr:'Tout va bien ici, merci de demander ! Et toi ?',
+    de:'Alles gut hier, danke der Nachfrage! Und bei dir?',
+    it:'Tutto bene qui, grazie per aver chiesto! E tu?',
+    ru:'Всё хорошо, спасибо, что спросили! А у вас?',
+    ar:'كل شيء جيد هنا، شكرًا لسؤالك! وكيف حالك؟',
+    hi:'यहाँ सब बढ़िया है, पूछने के लिए धन्यवाद! आप कैसे हैं?',
+    zh:'我这边一切都好，谢谢关心！你呢？',
+    ja:'こちらは順調です。聞いてくれてありがとう！あなたは？',
+    ko:'여기는 잘 지내고 있어요. 물어봐 줘서 고마워요! 당신은요?',
+    tr:'Burada her şey yolunda, sorduğun için teşekkürler! Ya sen?',
+    id:'Semua baik di sini, terima kasih sudah bertanya! Bagaimana denganmu?'
+  };
+  return replies[lang]||replies.en;
+}
 const COMMAND_TOPICS={cashout:'cashout',wallet:'wallet',staking:'staking',security:'security',migration:'legacy',index:'index',fees:'fees'};
 const HELP=`Sumcoin Helper v${VERSION} — multilingual, source-grounded Sumcoin support.\n\n/ask your question — source-grounded answer in your language\n/more — more detail on your last question (30-minute context)\n/guide zero|restore|pending|staking|connect|migration|fees|trade — step-by-step help\n/price [USD|EUR|BRL|...] — live peer-to-peer reference rate\nAsk naturally about Sumcoin price history, historical highs or comparisons
 /currency CODE|auto — save preferred display currency (24h)\n/tx TXID — read-only transaction status\n/address PUBLIC_ADDRESS — public address history (visible in group)\n/language CODE — choose response language; /language auto resets (24h in memory)\n/find words — search approved docs\n/github words — search allowlisted official GitHub files\n/sources — official reference URLs\n/cashout /wallet /migration /staking /security /index /fees\n/engine (admin, reply to bot answer) — show which engine answered\n/feedback — report an inaccurate answer (aggregated)\n/stop — pause automatic help for 24 hours; /resume — turn it on again\n\nGroup admins: /mode observe|reply, /stats, /weekly, /feedbacks, /learn, /correct (reply), /revoke ID, /review, /teach QUESTION | ANSWER | OFFICIAL_URL, /approve NUMBER, /reject NUMBER, /chatid, /queue\n\nQuestions in your language are welcome. Keep wallet recovery words private. Admin commands remain English.`;
@@ -65,7 +91,7 @@ export function isDirectedMention(text,botUsername){
   return start.test(text)||/[?¿؟？]/u.test(text);
 }
 export function createHandler({client,state,config,botUsername,knowledge,learning,ai,escalations=null,groupIndex=null,liveOps={price:livePrice,tx:liveTransaction,address:liveAddress},marketHistory=new MarketHistory()}){
-  const preferences=new Map(),currencyPreferences=new Map(),pendingPesos=new Map(),seenReplies=new Map(),answerOrigins=new Map(),topicHistory=new Map(),answeredMessages=new Map(),marketByMember=new Map(),marketByReply=new Map(),mutedMembers=new Map(),adminCache=new Map();
+  const preferences=new Map(),currencyPreferences=new Map(),pendingPesos=new Map(),seenReplies=new Map(),answerOrigins=new Map(),topicHistory=new Map(),answeredMessages=new Map(),marketByMember=new Map(),marketByReply=new Map(),recentConversations=new Map(),mutedMembers=new Map(),adminCache=new Map();
   const now=()=>Date.now();
   let lastWeeklyAttempt=0;
   async function send(m,text){return client.sendMessage(m,String(text).slice(0,3500));}
@@ -184,6 +210,13 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     if(origin==='live')state.noteOutcome('live');
     else if(origin==='local')state.noteOutcome('local');
     if(Number.isSafeInteger(result?.message_id)){
+      // A short, private, same-member window for direct conversational check-ins.
+      // Do not store message text, names or anything outside the group/chat scope.
+      if(m.from?.id){
+        recentConversations.set(`${m.chat.id}:${m.from.id}`,now()+90_000);
+        if(recentConversations.size>500){for(const [k,v] of recentConversations)if(v<=now())recentConversations.delete(k);
+          while(recentConversations.size>500)recentConversations.delete(recentConversations.keys().next().value);}
+      }
       answerOrigins.set(`${m.chat.id}:${result.message_id}`,{origin,until:now()+24*3600000});
       if(answerOrigins.size>1000){for(const [key,v] of answerOrigins)if(v.until<=now())answerOrigins.delete(key);while(answerOrigins.size>1000)answerOrigins.delete(answerOrigins.keys().next().value);}
     }
@@ -579,6 +612,7 @@ Private runtime data is not published to GitHub.`);
     const repliedToBot=m.reply_to_message?.from?.username?.toLowerCase()===botUsername.toLowerCase() && m.reply_to_message?.from?.is_bot===true;
     const q=m.text.replace(new RegExp('@'+botUsername,'ig'),'').trim();
     if(mention||repliedToBot){
+      if(isFriendlyCheckin(q)&&!containsSecret(q))return sendTopic(m,friendlyAnswer(languageFor(m,q)),null,languageFor(m,q),'local');
       const market=memberMarketRequest(m,q);
       if(market)return sendMarket(m,market,languageForMarket(m,q));
       const topic=repliedToBot&&isContextualFollowup(q)?repliedTopic(m):null;
@@ -587,6 +621,17 @@ Private runtime data is not published to GitHub.`);
       return ask(m,q,{expanded:Boolean(topic&&isMoreRequest(q)),contextTopic:topic?.id,contextLanguage:topicLanguage});
     }
     if(containsSecret(m.text))return;
+    // A normal human check-in is welcome ONLY right after this SAME member
+    // received an answer. Other users' chat, admin announcements, and old
+    // conversations are never sufficient; this uses no Groq quota.
+    const checkinUntil=recentConversations.get(`${m.chat.id}:${m.from?.id||0}`)||0;
+    const conversationalCheckin=isFriendlyCheckin(m.text)&&checkinUntil>now()&&!m.reply_to_message;
+    if(conversationalCheckin){
+      if(m.sender_chat||isMuted(m)||state.data.mode!=='reply')return;
+      if(!state.shouldReply(m,`auto:checkin:${m.from.id}`,0.0015,0))return;
+      const replyLanguage=languageFor(m,m.text);
+      return sendTopic(m,friendlyAnswer(replyLanguage),null,replyLanguage,'local');
+    }
     // Only the member who asked for pesos can resolve that pending question.
     if(state.data.mode==='reply'&&!m.sender_chat&&!await admin(m)&&!isMuted(m)&&await finishPesos(m,m.text))return;
 

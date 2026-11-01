@@ -138,3 +138,7 @@ The private Groq installer specifies `User-Agent: SumcoinHelper/0.0.18` to avoid
 ## v0.0.21 verified market follow-ups
 
 A successfully delivered live-price response creates a 20-minute in-memory market context for the same member, enabling natural follow-ups such as “what was the all time high”. A narrowly phrased standalone English ATH question is recognized in the dedicated Sumcoin group. Historical values are calculated from SumcoinPrice's validated OHLC history. The bot does not infer another asset's ATH or share a member's vague conversation context across members.
+
+## v0.0.22 group conversational routing
+
+A clearly worded daily SUM market-status question routes to `range=1d&pair=usd`, reports trailing-24-hour index performance and verifies the response. A casual check-in without a command responds only if the same member has received a bot answer in the past 90 seconds, or explicitly mentions/replies to the bot. Never respond to generic chat among other group members. These paths do not invoke Groq. Admin messages still suppress unsolicited chatter.

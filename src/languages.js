@@ -8,12 +8,12 @@ const SCRIPT = [
 export const LANGUAGE_NAMES = Object.freeze({en:'English',es:'Español',pt:'Português',fr:'Français',de:'Deutsch',it:'Italiano',ru:'Русский',ar:'العربية',hi:'हिन्दी',zh:'中文',ja:'日本語',ko:'한국어',tr:'Türkçe',id:'Bahasa Indonesia'});
 const WORDS = {
   en:'how what why where when can could should please help withdraw dollars money my wallet is are from the this that send receive missing balance with do does did',
-  es:'quiero necesito retirar dólares dolares dinero billetera saldo cómo como puedo sacar cambiar vender dónde donde qué que ayuda tengo mis enviar recibir estafa gracias calcula calculado índice indice cotización cotizacion precio precios grafico grafica historico historica muéstrame muestra por qué porque del el la los las hoy cuánto cuanto vale',
-  pt:'quero preciso retirar dinheiro carteira saldo como posso sacar vender onde quanto minha minhas enviar receber obrigado saque pix reais pelo pela calculado calculada criptomoedas cotação cotacao valor preço preco grafico historico mostra índice indice funciona funcionamento mercado brasileiro do da dos das o os um uma meu meus você voces',
-  fr:'comment puis peux retirer argent portefeuille solde pourquoi avec vous mon mes envoyer recevoir vendre achat combien vaut valent valeur prix quel quelle aider bonjour montre montrez graphique courbe historique evolution voir ou trouve explique expliquer explication simplement fonctionne fonctionnement comment est un une du de des les pour indice cours euro euros différence differente different garantie garanti garantir taux change peut peux signifie cest estce que voudrais savoir pourrais combien',
-  de:'wie kann ich meine mein geld abheben brieftasche guthaben warum senden empfangen verkaufen hallo bitte hilfe auszahlen erklären erklaren einfach funktioniert preis unterschied garantie bedeutet erklärung erklarung',
+  es:'quiero necesito retirar dólares dolares dinero billetera saldo cómo como puedo sacar cambiar vender dónde donde qué que ayuda tengo mis enviar recibir estafa gracias calcula calculado índice indice cotización cotizacion precio precios grafico grafica historico historica muéstrame muestra por qué porque del el la los las hoy cuánto cuanto vale va',
+  pt:'quero preciso retirar dinheiro carteira saldo como posso sacar vender onde quanto minha minhas enviar receber obrigado saque pix reais pelo pela calculado calculada criptomoedas cotação cotacao valor preço preco grafico historico mostra índice indice funciona funcionamento mercado brasileiro do da dos das o os um uma meu meus você voces vai hoje',
+  fr:'comment puis peux retirer argent portefeuille solde pourquoi avec vous mon mes envoyer recevoir vendre achat combien vaut valent valeur prix quel quelle aider bonjour montre montrez graphique courbe historique evolution voir ou trouve explique expliquer explication simplement fonctionne fonctionnement comment est un une du de des les pour indice cours euro euros différence differente different garantie garanti garantir taux change peut peux signifie cest estce que voudrais savoir pourrais combien porte aujourd hui',
+  de:'wie kann ich meine mein geld abheben brieftasche guthaben warum senden empfangen verkaufen hallo bitte hilfe auszahlen erklären erklaren einfach funktioniert preis unterschied garantie bedeutet erklärung erklarung lauft heute',
   it:'come posso prelevare soldi portafoglio saldo perché perche mio mia inviare ricevere vendere ciao aiuto quanto spiega spiegami semplicemente funziona funzionamento prezzo euro indice differenza garanzia dove vedere lo storico massimo quale',
-  tr:'nasıl nasil para çekebilirim cekebilirim cüzdan cuzdan bakiyem nerede göndermek gondermek satmak yardım yardim açıkla acikla açıklama aciklama çalışır calisir fiyat fark garanti geçmişini gecmisini grafik tarihsel',
+  tr:'nasıl nasil para çekebilirim cekebilirim cüzdan cuzdan bakiyem nerede göndermek gondermek satmak yardım yardim açıkla acikla açıklama aciklama çalışır calisir fiyat fark garanti geçmişini gecmisini grafik tarihsel bugun nasil',
   id:'bagaimana bisa menarik uang dompet saldo saya mengirim menerima jual tolong berapa kenapa jelaskan sederhana bekerja harga perbedaan jaminan indeks di mana melihat riwayat',
 };
 const WORDSETS=Object.fromEntries(Object.entries(WORDS).map(([k,v])=>[k,new Set(v.split(' '))]));
@@ -24,7 +24,7 @@ export function detectLanguage(raw,hint=''){
   // Inverted opening punctuation is an unambiguous Spanish message signal.
   if(/[¿¡]/u.test(s))return 'es';
   for(const [re,tag] of SCRIPT)if(re.test(s))return tag;
-  const words=fold(s).match(/[a-zÀ-ÿ]+/gi)||[];
+  const words=fold(s).match(/\p{L}+/gu)||[];
   const scores=Object.entries(WORDSETS).map(([lang,set])=>[lang,words.filter(w=>set.has(w)).length]).sort((a,b)=>b[1]-a[1]);
   const hintCode=localeTag(hint);
   if(scores[0]?.[1]>=2 && scores[0][1]>scores[1][1])return scores[0][0];

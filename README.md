@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml/badge.svg"></a>
-  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.21"><img alt="Version 0.0.21" src="https://img.shields.io/badge/version-0.0.21-blue"></a>
+  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.22"><img alt="Version 0.0.22" src="https://img.shields.io/badge/version-0.0.22-blue"></a>
   <img alt="Node.js 20.11 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20.11-339933?logo=nodedotjs&logoColor=white">
   <img alt="14 supported locales" src="https://img.shields.io/badge/locales-14-0A73B7">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green"></a>
@@ -20,7 +20,7 @@
 
 ## Features
 
-- **Automatic help:** Replies to relevant, ordinary group questions; ignores general chat, announcements, and admin posts.
+- **Automatic help:** Replies to relevant, ordinary group questions, including daily performance; ignores incidental group chat and announcements. Same-member check-ins within 90 seconds of a bot answer can receive a brief friendly reply.
 - **Follow-up conversations:** “Can you tell me more?” expands *your own* recent bot answer. Reply directly to any bot answer to continue **that specific** topic. `/more` works too.
 - **14 localized support flows:** English, Spanish, Portuguese, French, German, Italian, Russian, Arabic, Hindi, Chinese, Japanese, Korean, Turkish, and Indonesian. Specialized topics may fall back to reviewed English text.
 - **SumcoinPrice historical data:** Ask naturally for a chart, historical performance or the all-time high. Verified historical figures use validated SumcoinPrice data, and `/sources` includes https://sumcoinprice.com/. Developer-only legacy aliases remain available but are not needed in ordinary chat.
@@ -73,8 +73,12 @@ systemctl --user restart telegram-sum-helper.service
 
 See [Operations](docs/OPERATIONS.md) for deployment, source synchronization, admin approval, storage paths and privacy details; see [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
-### Natural market-history conversations (v0.0.21)
+### Market conversations
 
-In @sumcoins, ask for SUM charts, price history, the highest recorded index value, or historical performance in natural language. A successful live-rate quote now carries the same 20-minute conversation context as a historical answer. Clear standalone questions such as “what was the all time high” also work, and ambiguous questions about other assets do not reuse Sumcoin context. A relevant follow-up from the same member (or a reply to a specific bot message) retains market context for 20 minutes. For ATH, only validated data from `https://sumcoinprice.com/api/history.php?range=all&pair=usd` is used; the bot falls back to the chart if the API cannot be verified. No special public chart command is needed.
+Market questions and follow-ups are scoped per member for 20 minutes. Current rates remain on `rate.slicewallet.org`; verified 24-hour performance and ATH use `sumcoinprice.com`. No fabricated prices, public `/chart` command, or additional Groq charges.
 
 For an offline, private aggregate audit of a Telegram Desktop export: `python3 scripts/audit-telegram-members.py /path/to/result.json.zip`. The optional `--private-csv /path/to/authors.csv` reports prior message authors **only**; it is not a list of people who left.
+
+### Natural conversation (v0.0.22)
+
+“How’s Sumcoin doing today?” gets verified 24-hour movement, high and low. Casual check-ins work only within 90 seconds of the same member’s bot interaction, or when they address the bot directly. No Groq quota, no group interruptions.

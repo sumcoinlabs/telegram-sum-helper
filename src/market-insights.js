@@ -16,6 +16,13 @@ const api = /\b(?:api|endpoint|json|data feed|raw data|developer|technical data|
 const price = /\b(?:price|rate|quote|worth|value|precio|prix|preco|cotac|preis|kurs|prezzo|harga|fiyat|valeur|valor|wert|valore)\b|цена|سعر|कीमत|価格|价格|가격/iu;
 const ask = /[?¿？؟]|^(?:what|whats|what's|where|when|how|show|tell|give|find|open|link|compare|can|could|please|i want|i need|what about|and|was|were|is|montre|montrez|quel|quelle|quand|ou|comment|et|cuanto|cuando|donde|muestra|mostrar|mostra|quando|onde|wie|wann|wo|zeige|come|quando|dove|mostra|сколько|когда|где|как|покажи|متى|أين|كم|कैसे|कब|कहाँ|多少|什么时候|哪里|どう|いつ|どこ|얼마|언제|어디|ne|nerede|kapan|berapa|bagaimana|di mana)\b/iu;
 const shorthand = /^(?:sumcoins?|sum)\s+(?:chart|graph|history|ath|api)$/iu;
+// A broad daily-market question is asking for performance, not just a quote.
+// Treat 'today' as the trailing 24 hours; do not silently claim UTC-calendar-day statistics.
+// Require the actual project name so casual group conversations aren't hijacked.
+const dailyOverview = /^(?:(?:how(?:['’]?s| is| has)\s+)(?:sumcoins?|sum)\s+(?:doing|performing|trending|looking)(?:\s+(?:today|now|right now|lately|in the last 24 hours))?|how(?:['’]?s| is| has)\s+(?:sumcoins?|sum)\s+(?:doing|performing|trending|looking)(?:\s+(?:today|now|right now|lately|in the last 24 hours))?|is\s+(?:sumcoins?|sum)\s+(?:up or down|doing well)(?:\s+today)?|(?:what['’]?s|what is)\s+(?:sumcoins?|sum)(?:'s)?\s+(?:performance|progress|movement)\s+(?:today|over the last 24 hours))\s*[?.!]*$/iu;
+// A few complete non-English phrasings; these are market requests, not language guesses.
+const dailyOverviewLocalized = /^(?:(?:comment se porte|comment va) sumcoin(?: aujourd'hui)?|(?:como va) sumcoin(?: hoy)?|(?:como vai|como esta) sumcoin(?: hoje)?|(?:wie lauft|wie geht es) sumcoin(?: heute)?|(?:come sta andando) sumcoin(?: oggi)?|(?:как дела у|как поживает) sumcoin(?: сегодня)?|كيف حال sumcoin اليوم|आज sumcoin कैसा चल रहा है|sumcoin 今天表现如何|sumcoin は今日どうですか|sumcoin 오늘 어때요|sumcoin bugun (?:nasil|nasıl)|bagaimana kinerja sumcoin hari ini)\s*[?.!？。؟]*$/iu;
+
 // In the dedicated Sumcoin group, an unqualified, standalone ATH question is
 // a clear request for SUM's record index value. Do not require the member to
 // first click a chart link or state the project name. Keep this narrowly
@@ -37,7 +44,8 @@ const rangeFrom = s => {
 };
 export function marketIntent(question, {active=false}={}) {
   const s=normalize(question).slice(0,1000);
-  if(!s || !ask.test(s) && !shorthand.test(s) && !/^(?:покажи|расскажи|اعرض|أرني|बताओ|दिखाओ|告诉我|显示|見せて|教えて|보여줘|알려줘)/u.test(s))return null;
+  const daily=dailyOverview.test(s)||dailyOverviewLocalized.test(s.replace(/^[¿¡\s]+/u,''));
+  if(!s || !daily && !ask.test(s) && !shorthand.test(s) && !/^(?:покажи|расскажи|اعرض|أرني|बताओ|दिखाओ|告诉我|显示|見せて|教えて|보여줘|알려줘)/u.test(s))return null;
   const named=coin.test(s);
   // A group follow-up may omit the coin name ONLY with a recent, same-member
   // market conversation or an explicit reply to the relevant bot message.
@@ -49,6 +57,7 @@ export function marketIntent(question, {active=false}={}) {
      !/\b(?:relative to|compared|comparison|compare|versus|vs|higher than|against|in bitcoin|in btc)\b/iu.test(s))return null;
   if(api.test(s)&&named)return {kind:'api',pair:'usd'};
   if(isHigh)return {kind:'ath',pair:/\b(?:btc|bitcoin)\b/i.test(s)?'btc':'usd'};
+  if(daily)return {kind:'overview',range:'1d',pair:'usd'};
   if(isCompare)return {kind:'compare',pair:'btc'};
   const range=rangeFrom(s);
   if(range && (performance.test(s)||isChart||(active&&/^(?:what about|and|et|y|e|und|last|past|what's|what is)/u.test(s))))
@@ -72,6 +81,24 @@ const translations = {
  ko:{chart:'Sumcoin의 과거 가격, 캔들 차트, 비트코인 비교를 여기에서 볼 수 있습니다:',ath:'SUM/{pair} 지수의 기록상 최고값은 {date}(UTC)에 {value}였습니다.',perf:'지난 {range} 동안 SUM/{pair} 지수 변동률은 {change}%입니다. 최고 {high}, 최저 {low}.',compare:'SUM의 비트코인 기준 가격과 일정 기간의 수익률 중 무엇을 비교하시나요? SUM/BTC 기록은 여기에서 볼 수 있습니다:',api:'개발자를 위한 SumcoinPrice 공개 API:',unavailable:'현재 과거 수치를 검증할 수 없습니다. 전체 차트는 여기에서 확인하세요:',source:'과거 데이터:',range:{'1d':'24시간','1w':'7일','1m':'30일','3m':'3개월','6m':'6개월','1y':'12개월','5y':'5년','all':'전체 기록'}},
  tr:{chart:'Sumcoin fiyat geçmişini, mum grafiklerini ve Bitcoin karşılaştırmalarını burada görebilirsin:',ath:'SUM/{pair} endeksinin kaydedilen en yüksek değeri {date} (UTC) tarihinde {value} idi.',perf:'Son {range} içinde SUM/{pair} endeksi %{change} değişti. En yüksek {high}, en düşük {low}.',compare:'SUM’un Bitcoin cinsinden değerini mi, yoksa bir dönemdeki performanslarını mı karşılaştırmak istiyorsun? SUM/BTC geçmişi burada:',api:'Geliştiriciler için SumcoinPrice genel API adresleri:',unavailable:'Şu anda tarihsel veriyi doğrulayamıyorum. Tam grafik burada:',source:'Tarihsel veri:',range:{'1d':'24 saat','1w':'7 gün','1m':'30 gün','3m':'3 ay','6m':'6 ay','1y':'12 ay','5y':'5 yıl','all':'mevcut tüm geçmiş'}},
  id:{chart:'Riwayat harga Sumcoin, grafik candlestick, dan perbandingan Bitcoin bisa dilihat di sini:',ath:'Nilai indeks SUM/{pair} tertinggi yang tercatat adalah {value} pada {date} (UTC).',perf:'Selama {range} terakhir, indeks SUM/{pair} berubah {change}%. Tertinggi {high}, terendah {low}.',compare:'Maksud Anda harga SUM dalam Bitcoin atau perbandingan kinerja selama periode tertentu? Riwayat SUM/BTC ada di sini:',api:'Berikut API publik SumcoinPrice untuk pengembang:',unavailable:'Saya belum bisa memverifikasi data historis saat ini. Grafik lengkap tersedia di sini:',source:'Data historis:',range:{'1d':'24 jam','1w':'7 hari','1m':'30 hari','3m':'3 bulan','6m':'6 bulan','1y':'12 bulan','5y':'5 tahun','all':'seluruh riwayat tersedia'}}
+};
+// Natural conversational response for broad daily questions; numbers are from
+// the validated 1-day SumcoinPrice period, never from a language model.
+const dailyCopy={
+ en:'Over the past 24 hours, Sumcoin’s USD index {direction} {percent}%. It ranged from {low} to {high} USD.',
+ es:'En las últimas 24 horas, el índice SUM/USD varió {change}%. Mínimo: {low}; máximo: {high}.',
+ pt:'Nas últimas 24 horas, o índice SUM/USD variou {change}%. Mínima: {low}; máxima: {high}.',
+ fr:'Au cours des dernières 24 heures, l’indice SUM/USD a varié de {change} %. Plus bas : {low} ; plus haut : {high}.',
+ de:'In den letzten 24 Stunden hat sich der SUM/USD-Index um {change} % verändert. Tief: {low}; Hoch: {high}.',
+ it:'Nelle ultime 24 ore, l’indice SUM/USD è variato del {change}%. Minimo: {low}; massimo: {high}.',
+ ru:'За последние 24 часа индекс SUM/USD изменился на {change}%. Минимум: {low}; максимум: {high}.',
+ ar:'خلال آخر 24 ساعة تغير مؤشر SUM/USD بنسبة {change}%. الأدنى: {low}؛ الأعلى: {high}.',
+ hi:'पिछले 24 घंटों में SUM/USD सूचकांक में {change}% बदलाव हुआ। न्यूनतम: {low}; अधिकतम: {high}।',
+ zh:'过去24小时，SUM/USD指数变化了{change}%。最低：{low}；最高：{high}。',
+ ja:'過去24時間のSUM/USD指数の変動率は{change}%です。安値：{low}、高値：{high}。',
+ ko:'지난 24시간 동안 SUM/USD 지수는 {change}% 변동했습니다. 최저: {low}, 최고: {high}.',
+ tr:'Son 24 saatte SUM/USD endeksi %{change} değişti. En düşük: {low}; en yüksek: {high}.',
+ id:'Dalam 24 jam terakhir, indeks SUM/USD berubah {change}%. Terendah: {low}; tertinggi: {high}.'
 };
 function render(template, values){return template.replace(/\{(\w+)\}/g,(_match,k)=>String(values[k]??''));}
 function numeric(n){return typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<1e12;}
@@ -124,14 +151,20 @@ export async function marketAnswer(intent,lang='en',{history=new MarketHistory()
  if(intent.kind==='api')return {text:`${c.api}\n${MARKET_API}\n${historyUrl('all','usd')}\n${historyUrl('all','btc')}`,verified:false};
  if(intent.kind==='chart')return {text:`${c.chart}\n${MARKET_CHART}`,verified:false};
  if(intent.kind==='compare')return {text:`${c.compare}\n${MARKET_CHART}`,verified:false};
- if(!['ath','performance'].includes(intent.kind))throw Error('Invalid market answer');
- const range=intent.kind==='ath'?'all':intent.range;
+ if(!['ath','performance','overview'].includes(intent.kind))throw Error('Invalid market answer');
+ const range=intent.kind==='ath'?'all':intent.kind==='overview'?'1d':intent.range;
  try{
-   const result=await history.query(intent.kind,range,intent.pair||'usd');
+   const result=await history.query(intent.kind==='overview'?'performance':intent.kind,range,intent.pair||'usd');
    if(intent.kind==='ath'){
      const date=new Date(result.time*1000).toISOString().slice(0,10);
      return {text:render(c.ath,{pair,value:format(result.high),date})+`\n${c.source} ${MARKET_CHART}`,verified:true};
    }
+    if(intent.kind==='overview'){
+      const change=result.change_percent;
+      const values={pair,change:change.toFixed(2),direction:change>0?'rose':change<0?'fell':'changed',percent:Math.abs(change).toFixed(2),high:format(result.high),low:format(result.low)};
+      // English 'rose/fell' uses unsigned magnitude; a flat day reads 'changed 0.00%'.
+      return {text:render(dailyCopy[lang]||dailyCopy.en,values)+`\n${c.source} ${MARKET_CHART}`,verified:true};
+    }
    return {text:render(c.perf,{pair,range:c.range[range]||range,change:result.change_percent.toFixed(2),high:format(result.high),low:format(result.low)})+`\n${c.source} ${MARKET_CHART}`,verified:true};
  }catch{return {text:`${c.unavailable}\n${MARKET_CHART}`,verified:false};}
 }

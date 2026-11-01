@@ -35,7 +35,7 @@ const setup=()=>{
 };
 
 test('v021: standalone ATH phrasing works with no prior context, while unrelated assets do not hijack SUM',()=>{
- assert.equal(VERSION,'0.0.21');
+ assert.equal(VERSION,'0.0.22');
  for(const q of ['what was the all time high','What was the all-time high?','what is the ATH?',
    'whats the all time high', 'What was the peak price?'])assert.equal(marketIntent(q)?.kind,'ath',q);
  for(const q of ['What was Bitcoin’s all-time high?', 'What was the all time high for bitcoin?',

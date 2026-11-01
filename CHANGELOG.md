@@ -1,3 +1,10 @@
+## v0.0.22 — Natural daily market status and targeted conversation (2026-10-31)
+
+- Answer “hows sumcoin doing today” and equivalent daily performance questions with independently validated trailing-24-hour SUM/USD index change, high, low and SumcoinPrice chart source. No invented quotes, no mistaken calendar-day claims and no Groq quota use.
+- Respond naturally to “hows your day going” only within 90 seconds of a successfully delivered bot reply to the same group member (or when explicitly addressing the bot). No unsolicited replies to other members, unrelated greetings or admin announcements.
+- Preserve current multicurrency quotes, ATH, 20-minute member-scoped market context, multilingual source-grounded responses, and the existing private Groq configuration.
+- Add actual conversational regression tests for both reported messages, language routing, per-member isolation, error fallback and 24-hour data validation.
+
 ## v0.0.21 — Live quote to historical follow-up continuity (2026-10-31)
 
 - Fix real Telegram sequence: “whats the price of sum” followed by “what was the all time high” now gives verified SUM ATH and UTC date, without a chart request, hyphen, command, or Groq API call.
