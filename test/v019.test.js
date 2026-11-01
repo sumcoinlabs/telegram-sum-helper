@@ -15,7 +15,7 @@ import { createHandler } from '../src/bot.js';
 import { VERSION } from '../src/version.js';
 
 test('v019 version, safe allowlist and nonfabricated official fixed endpoints',()=>{
-  assert.equal(VERSION,'0.0.23');
+  assert.equal(VERSION,'0.0.24');
   assert.equal(SUMCOINPRICE.website,'https://sumcoinprice.com/');
   assert.equal(SUMCOINPRICE.market,'https://sumcoinprice.com/market.php');
   assert.equal(SUMCOINPRICE.history,'https://sumcoinprice.com/api/history.php?range=1d');

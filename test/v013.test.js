@@ -14,19 +14,19 @@ import {Knowledge} from '../src/knowledge.js';
 const tmp=()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'sum-v013-'));return {dir,clean:()=>fs.rmSync(dir,{recursive:true,force:true})};};
 
 test('v013 banner version has one source and README badge matches',()=>{
- assert.equal(VERSION,'0.0.23');
+ assert.equal(VERSION,'0.0.24');
  const index=fs.readFileSync(new URL('../src/index.js',import.meta.url),'utf8');
  assert.match(index,/Sumcoin Helper v\$\{VERSION\}/);
  assert.doesNotMatch(index,/v0\.0\.10/);
  const readme=fs.readFileSync(new URL('../README.md',import.meta.url),'utf8');
- assert.match(readme,/version-0\.0\.23/);
+ assert.match(readme,/version-0\.0\.24/);
  assert.match(readme,/sumcoin_400x400\.png/);
  assert.ok(readme.split('\n').length<100);
 });
 
 test('v013 protected publisher pins verified v0.0.12 commit without stale checksums or force',()=>{
  const script=fs.readFileSync(new URL('../scripts/push-update.sh',import.meta.url),'utf8');
- assert.match(script,/3a21d628030744d932d6546061b56af6fbc33750/);
+ assert.match(script,/5abf686beafb8cf8c19b69805a543eba1f4cb8f2/);
  assert.match(script,/git rev-parse HEAD/);
  assert.doesNotMatch(script,/while read -r file expected/);
  assert.doesNotMatch(script,/\bgit push --force\b/);
@@ -113,7 +113,7 @@ test('v013 restricted status reports version and engine without exposing secrets
  const now=Math.floor(Date.now()/1000);
  await bot({chat:{id:-10012345,type:'supergroup',username:'sumcoins'},from:{id:12345,username:'admin',language_code:'en'},date:now,message_id:11,text:'/status'});
  assert.equal(msgs.length,1);
- assert.match(msgs[0],/v0\.0\.23/);
+ assert.match(msgs[0],/v0\.0\.24/);
  assert.match(msgs[0],/retrieval only \(no API key\)/);
  assert.doesNotMatch(msgs[0],/TELEGRAM_BOT_TOKEN|OPENAI_API_KEY/);
 }finally{e.clean();}});

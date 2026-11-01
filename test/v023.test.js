@@ -28,7 +28,7 @@ function fixture(autoAI=true){
  return {bot,sent,urls,state,ai,msg,get modelCalls(){return modelCalls;},cleanup(){fs.rmSync(dir,{recursive:true,force:true})}};
 }
 test('v023 release and deterministic natural 24-hour aliases',()=>{
- assert.equal(VERSION,'0.0.23');
+ assert.equal(VERSION,'0.0.24');
  for(const q of ['whats the change over the last day','what was the change over the past day','what changed over the previous day'])
    assert.deepEqual(marketIntent(q,{active:true}),{kind:'performance',range:'1d',pair:'usd'},q);
  assert.equal(marketIntent('whats the change over the last day'),null,'unrelated members have no market context');

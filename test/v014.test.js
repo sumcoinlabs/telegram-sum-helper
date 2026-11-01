@@ -14,16 +14,16 @@ import {VERSION} from '../src/version.js';
 const fixture=()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'sum-v014-'));return {dir,clean:()=>fs.rmSync(dir,{recursive:true,force:true})};};
 
 test('v014 version, protected publisher and branded concise README',()=>{
- assert.equal(VERSION,'0.0.23');
+ assert.equal(VERSION,'0.0.24');
  const script=fs.readFileSync(new URL('../scripts/push-update.sh',import.meta.url),'utf8');
- assert.match(script,/3a21d628030744d932d6546061b56af6fbc33750/);
- assert.match(script,/CURRENT.*0\.0\.22/);
- assert.match(script,/CURRENT.*0\.0\.22/);
+ assert.match(script,/5abf686beafb8cf8c19b69805a543eba1f4cb8f2/);
+ assert.match(script,/CURRENT.*0\.0\.23/);
+ assert.match(script,/CURRENT.*0\.0\.23/);
  assert.match(script,/git rev-parse HEAD/);
  assert.doesNotMatch(script,/git push --force/);
  const readme=fs.readFileSync(new URL('../README.md',import.meta.url),'utf8');
  assert.match(readme,/sumcoin_400x400\.png/);
- assert.match(readme,/version-0\.0\.23/);
+ assert.match(readme,/version-0\.0\.24/);
  assert.ok(readme.split('\n').length<100);
 });
 
@@ -32,7 +32,7 @@ test('v014 AI is strictly off by default, caps advertised and free offline alway
  assert.match(entry,/process\.env\.AI_ENABLED==='true'/);
  assert.match(entry,/apiKey:config\.aiEnabled\?/);
  const env=fs.readFileSync(new URL('../.env.example',import.meta.url),'utf8');
- for(const key of ['AI_ENABLED=false','AI_HOURLY_LIMIT=4','AI_DAILY_LIMIT=12','AI_MONTHLY_LIMIT=60'])assert.ok(env.includes(key));
+ for(const key of ['AI_ENABLED=false','AI_HOURLY_LIMIT=900','AI_DAILY_LIMIT=500','AI_MONTHLY_LIMIT=15500'])assert.ok(env.includes(key));
  assert.match(env,/WEEKLY_REPORT_ENABLED=false/);
 });
 

@@ -8,13 +8,14 @@ export class State {
     this.file = file;
     this.now = now;
     this.cooldowns = new Map(); // in-memory only; never written to disk
-    this.data = { mode: initialMode, detected: {}, answered: {}, days: {}, languages: {}, feedback: 0, feedbackItems: [], aiRequests: {}, aiHours: {}, aiMonths: {}, outcomes: {}, weeklySent: null };
+    this.data = { mode: initialMode, detected: {}, answered: {}, days: {}, languages: {}, feedback: 0, feedbackItems: [], aiRequests: {}, aiHours: {}, aiMonths: {}, aiRecent: [], aiTokenDays: {}, outcomes: {}, weeklySent: null };
     try {
       const loaded = JSON.parse(fs.readFileSync(file, 'utf8'));
       if (['reply', 'observe'].includes(loaded.mode)) this.data.mode = loaded.mode;
-      for (const key of ['detected', 'answered', 'days', 'languages', 'aiRequests', 'aiHours', 'aiMonths', 'outcomes']) {
+      for (const key of ['detected', 'answered', 'days', 'languages', 'aiRequests', 'aiHours', 'aiMonths', 'aiTokenDays', 'outcomes']) {
         if (loaded[key] && typeof loaded[key] === 'object' && !Array.isArray(loaded[key])) this.data[key] = loaded[key];
       }
+      if(Array.isArray(loaded.aiRecent))this.data.aiRecent=loaded.aiRecent.filter(x=>x&&Number.isFinite(x.at)&&x.at>this.now()-60000&&Number.isFinite(x.tokens)&&x.tokens>=0&&typeof x.id==='string').slice(-100);
       if(Array.isArray(loaded.feedbackItems))this.data.feedbackItems=loaded.feedbackItems.slice(-100);
       if(typeof loaded.weeklySent==='string')this.data.weeklySent=loaded.weeklySent;
       if(Number.isFinite(Number(loaded.feedback)))this.data.feedback=Math.max(0,Number(loaded.feedback));
@@ -76,19 +77,50 @@ export class State {
   }
   reports(){return this.data.feedbackItems.slice(-15).reverse().map(r=>`Bot message #${r.messageId} (${new Date(r.at).toISOString().slice(0,10)})`).join('\n')||'No recent feedback entries.';}
 
-  consumeAiQuota(limit, hourlyLimit=4, monthlyLimit=60){
-    // All caps are enforced locally BEFORE an API call. Billing/account-level
-    // limits must also be configured separately; token costs vary per request.
-    const iso=new Date(this.now()).toISOString(),day=iso.slice(0,10),hour=iso.slice(0,13),month=iso.slice(0,7);
-    if(![limit,hourlyLimit,monthlyLimit].every(x=>Number.isInteger(x)&&x>0))return false;
-    this.data.aiRequests=Object.fromEntries(Object.entries(this.data.aiRequests).filter(([d])=>d===day));
-    this.data.aiHours=Object.fromEntries(Object.entries(this.data.aiHours).filter(([h])=>h===hour));
-    this.data.aiMonths=Object.fromEntries(Object.entries(this.data.aiMonths).filter(([m])=>m===month));
-    if((this.data.aiRequests[day]||0)>=limit || (this.data.aiHours[hour]||0)>=hourlyLimit || (this.data.aiMonths[month]||0)>=monthlyLimit)return false;
-    this.data.aiRequests[day]=(this.data.aiRequests[day]||0)+1;
-    this.data.aiHours[hour]=(this.data.aiHours[hour]||0)+1;
-    this.data.aiMonths[month]=(this.data.aiMonths[month]||0)+1;
-    this.save();return true;
+  // Calendar-day/hour/month counters remain backward compatible with older
+  // releases. The new 60-second window is genuinely rolling, not a minute
+  // bucket that can admit bursts at HH:MM boundaries. Both AI routes share it.
+  reserveAiBudget({dailyLimit,hourlyLimit,monthlyLimit,minuteLimit=null,tokensMinuteLimit=null,tokensDailyLimit=null,estimatedTokens=0}){
+    const now=this.now(),iso=new Date(now).toISOString();
+    const day=iso.slice(0,10),hour=iso.slice(0,13),month=iso.slice(0,7);
+    if(![dailyLimit,hourlyLimit,monthlyLimit].every(x=>Number.isInteger(x)&&x>0))return null;
+    // A configured zero is OFF (fail closed); null means the legacy caller
+    // intentionally uses only its three established request caps.
+    if(![minuteLimit,tokensMinuteLimit,tokensDailyLimit].every(x=>x===null||(Number.isInteger(x)&&x>0)))return null;
+    if(!Number.isInteger(estimatedTokens)||estimatedTokens<0)return null;
+    const minuteWindow=(this.data.aiRecent||[]).filter(x=>x.at>now-60000&&x.at<=now);
+    const minuteTokens=minuteWindow.reduce((n,x)=>n+x.tokens,0);
+    if((this.data.aiRequests[day]||0)>=dailyLimit ||
+       (this.data.aiHours[hour]||0)>=hourlyLimit ||
+       (this.data.aiMonths[month]||0)>=monthlyLimit ||
+       (minuteLimit!==null && minuteWindow.length>=minuteLimit) ||
+       (tokensMinuteLimit!==null && minuteTokens+estimatedTokens>tokensMinuteLimit) ||
+       (tokensDailyLimit!==null && (this.data.aiTokenDays[day]||0)+estimatedTokens>tokensDailyLimit))return null;
+    this.data.aiRequests={[day]:(this.data.aiRequests[day]||0)+1};
+    this.data.aiHours={[hour]:(this.data.aiHours[hour]||0)+1};
+    this.data.aiMonths={[month]:(this.data.aiMonths[month]||0)+1};
+    this.data.aiTokenDays={[day]:(this.data.aiTokenDays[day]||0)+estimatedTokens};
+    const id=`${now}-${this.data.aiRequests[day]}`;
+    this.data.aiRecent=[...minuteWindow,{id,at:now,tokens:estimatedTokens}];
+    this.save();return {id,day,estimatedTokens};
+  }
+
+  // Groq Responses usage.total_tokens (when returned) replaces the conservative
+  // preflight estimate. Unknown usage leaves the reservation charged, never 0.
+  settleAiBudget(ticket,actualTokens){
+    if(!ticket || !Number.isInteger(actualTokens) || actualTokens<0)return;
+    const previous=Number(ticket.estimatedTokens);
+    if(!Number.isFinite(previous))return;
+    const change=actualTokens-previous;
+    if(!change)return;
+    this.data.aiTokenDays[ticket.day]=Math.max(0,(this.data.aiTokenDays[ticket.day]||0)+change);
+    for(const r of this.data.aiRecent||[])if(r.id===ticket.id){r.tokens=actualTokens;break;}
+    this.save();
+  }
+
+  consumeAiQuota(limit,hourlyLimit=4,monthlyLimit=60){
+    // Compatibility for existing reviewed-answer quota tests/callers.
+    return Boolean(this.reserveAiBudget({dailyLimit:limit,hourlyLimit,monthlyLimit}));
   }
 
   noteOutcome(kind){

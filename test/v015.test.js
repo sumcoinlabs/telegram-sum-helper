@@ -22,13 +22,13 @@ const setup=({ai=new ConversationAI(),mode='reply'}={})=>{
   return {bot,sent,prices,msg,state,close:()=>fs.rmSync(dir,{force:true,recursive:true})};
 };
 test('v015 protected publisher builds from known v014 release and no secrets',()=>{
-  assert.equal(VERSION,'0.0.23');
+  assert.equal(VERSION,'0.0.24');
   const script=fs.readFileSync(new URL('../scripts/push-update.sh',import.meta.url),'utf8');
-  assert.match(script,/3a21d628030744d932d6546061b56af6fbc33750/);
-  assert.match(script,/0\.0\.22/);assert.match(script,/0\.0\.23/);
+  assert.match(script,/5abf686beafb8cf8c19b69805a543eba1f4cb8f2/);
+  assert.match(script,/0\.0\.23/);assert.match(script,/0\.0\.24/);
   assert.doesNotMatch(script,/git push --force/);
   const env=fs.readFileSync(new URL('../.env.example',import.meta.url),'utf8');
-  for(const setting of ['AI_ENABLED=false','AI_PROVIDER=groq','AI_MODEL=openai/gpt-oss-120b','GROQ_API_KEY=','AI_HOURLY_LIMIT=4','AI_DAILY_LIMIT=12','AI_MONTHLY_LIMIT=60'])assert.ok(env.includes(setting));
+  for(const setting of ['AI_ENABLED=false','AI_PROVIDER=groq','AI_MODEL=openai/gpt-oss-120b','GROQ_API_KEY=','AI_HOURLY_LIMIT=900','AI_DAILY_LIMIT=500','AI_MONTHLY_LIMIT=15500'])assert.ok(env.includes(setting));
 });
 test('v015 Groq API sends correct Responses request and omits store entirely',async()=>{
   let call;

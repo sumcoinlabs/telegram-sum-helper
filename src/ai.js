@@ -8,6 +8,17 @@ function outputText(data){
   if(typeof data.output_text==='string')return data.output_text;
   return (data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n');
 }
+// Real provider token usage can be absent in mock responses and some errors.
+// Return null rather than incorrectly treating an unknown bill as zero tokens.
+export function modelTokenUsage(result){
+  const usage=result?.usage;
+  if(!usage||typeof usage!=='object')return null;
+  const total=usage.total_tokens;
+  if(Number.isSafeInteger(total)&&total>=0)return total;
+  const input=usage.input_tokens??usage.prompt_tokens;
+  const output=usage.output_tokens??usage.completion_tokens;
+  return Number.isSafeInteger(input)&&input>=0&&Number.isSafeInteger(output)&&output>=0?input+output:null;
+}
 export function cleanModelAnswer(input){
   return String(input||'')
     .replace(/\\\*/g,'*')
@@ -30,7 +41,17 @@ export class ConversationAI {
     this.provider=provider;this.apiKey=apiKey;this.model=model||(provider==='groq'?'openai/gpt-oss-120b':'gpt-6-luna');this.fetch=fetchImpl;this.history=new Map();
   }
   clear(){this.history.clear();}
-  async interpretMarketIntent(question,{active=false}={}){
+  // Conservative preflight estimate. The actual Groq response usage replaces
+  // it after success. Estimates protect TPM/TPD even when usage is unavailable.
+  estimateIntentTokens(question){
+    return Math.ceil(Buffer.byteLength(INTENT_POLICY+safeQuestion(question),'utf8')/3)+240+110;
+  }
+  estimateAnswerTokens(question,context=[],historyKey='',language='en'){
+    const refs=context.slice(0,5).map(d=>`${d.title||''} ${String(d.body||'').slice(0,1250)} ${JSON.stringify(d.sources||d.source||'')}`).join(' ');
+    const history=JSON.stringify((this.history.get(historyKey)?.turns||[]).slice(-4)).slice(0,1600);
+    return Math.ceil(Buffer.byteLength(SYSTEM+refs+history+safeQuestion(question)+language,'utf8')/3)+500+150;
+  }
+  async interpretMarketIntent(question,{active=false,onUsage}={}){
     if(!this.apiKey) return null;
     const endpoint=this.provider==='groq'?'https://api.groq.com/openai/v1/responses':'https://api.openai.com/v1/responses';
     const q=safeQuestion(question);
@@ -43,7 +64,9 @@ export class ConversationAI {
     try {response=await this.fetch(endpoint,{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${this.apiKey}`},body:JSON.stringify(payload),signal:AbortSignal.timeout(12000)});}
     catch(e){throw new Error(`Intent classification unavailable: ${e?.name||'network error'}`);}
     if(!response.ok)throw new Error(`Intent classification returned HTTP ${response.status}`);
-    const raw=outputText(await response.json()).trim();
+    const result=await response.json();
+    if(typeof onUsage==='function')onUsage(modelTokenUsage(result));
+    const raw=outputText(result).trim();
     let parsed;
     try {parsed=JSON.parse(raw);}catch{return null;}
     if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return null;
@@ -57,7 +80,7 @@ export class ConversationAI {
     if(prior?.expires>Date.now() && s.length<70 && !/\b(sumcoin|sum|wallet|slice|electrum)\b/i.test(s))return `${prior.question||''} ${s}`.slice(0,1000);
     return s;
   }
-  async answer({question,context=[],historyKey,language='en'}) {
+  async answer({question,context=[],historyKey,language='en',onUsage}) {
     if(!context.length)return {text:t(language,'none'),usedAI:false};
     const refs=context.slice(0,5).map((d,i)=>`[SOURCE ${i+1}; ${d.kind}] ${d.title}\n${String(d.body).slice(0,1250)}\nURL: ${(d.sources||[d.source])[0]||''}`).join('\n\n');
     const cite=citationUrls(context).slice(0,2);
@@ -81,6 +104,7 @@ export class ConversationAI {
     }catch(e){throw new Error(`AI request unavailable: ${e?.name||'network error'}`);}
     if(!response.ok){throw new Error(`AI returned HTTP ${response.status}`);}
     const result=await response.json();
+    if(typeof onUsage==='function')onUsage(modelTokenUsage(result));
     const answer=outputText(result).trim();
     if(!answer)throw new Error('AI returned empty answer');
     const safe=cleanModelAnswer(answer).slice(0,1350);

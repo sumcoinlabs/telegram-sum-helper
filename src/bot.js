@@ -302,9 +302,13 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
   function offline(docs,lang,expanded=false){
     return offlineAnswer({docs,knowledge,lang,expanded});
   }
-  const CHAT_LIMIT=Number(config.aiDailyLimit??12);
-  const HOUR_LIMIT=Number(config.aiHourlyLimit??4);
-  const MONTH_LIMIT=Number(config.aiMonthlyLimit??60);
+  const CHAT_LIMIT=Number(config.aiDailyLimit??500);
+  const HOUR_LIMIT=Number(config.aiHourlyLimit??900);
+  const MONTH_LIMIT=Number(config.aiMonthlyLimit??15500);
+  const MINUTE_LIMIT=config.aiMinuteLimit==null?null:Number(config.aiMinuteLimit);
+  const TOKEN_MINUTE_LIMIT=config.aiTokensMinuteLimit==null?null:Number(config.aiTokensMinuteLimit);
+  const TOKEN_DAY_LIMIT=config.aiTokensDailyLimit==null?null:Number(config.aiTokensDailyLimit);
+  const reserveModel=tokens=>state.reserveAiBudget({dailyLimit:CHAT_LIMIT,hourlyLimit:HOUR_LIMIT,monthlyLimit:MONTH_LIMIT,minuteLimit:MINUTE_LIMIT,tokensMinuteLimit:TOKEN_MINUTE_LIMIT,tokensDailyLimit:TOKEN_DAY_LIMIT,estimatedTokens:Math.ceil(tokens)});
   const pesoKey=m=>`${m.chat.id}:${m.from?.id||m.sender_chat?.id||0}`;
   function marketClarification(lang){
     const messages={
@@ -333,10 +337,11 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     if(!state.shouldReply(m,`auto:market-clarification:${m.from?.id||0}`,0.00056,0)){
       route(m,'Ignored: temporary market clarification cooldown');return true;
     }
-    if(config.autoAI&&ai.apiKey&&state.consumeAiQuota(CHAT_LIMIT,HOUR_LIMIT,MONTH_LIMIT)){
-      try{
+    if(config.autoAI&&ai.apiKey){
+      const ticket=reserveModel(ai.estimateIntentTokens?.(q)??700);
+      if(ticket)try{
         noteModel('market-intent','requested');
-        const intent=await ai.interpretMarketIntent(q,{active:Boolean(lastMarket(m))});
+        const intent=await ai.interpretMarketIntent(q,{active:Boolean(lastMarket(m)),onUsage:tokens=>state.settleAiBudget(ticket,tokens)});
         noteModel('market-intent','success');state.noteOutcome('ai');
         if(intent?.kind==='price'){
           const lang=languageForMarket(m,q);
@@ -421,14 +426,15 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
     const primary=docs.find(d=>d.kind==='curated'||d.kind==='admin-approved');
     if(!docs.length)return automatic?undefined:send(m,t(lang,'none'));
     if(!ai.apiKey){state.noteOutcome('offline');return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang);}
-    if(!state.consumeAiQuota(CHAT_LIMIT,HOUR_LIMIT,MONTH_LIMIT)){state.noteOutcome('offline');return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang);}
+    // Never send unreviewed podcast, news, social or scraped GitHub text
+    // into the generative model as authority or executable instructions.
+    const reviewedContext=docs.filter(d=>d.kind==='curated'||d.kind==='admin-approved');
+    if(!reviewedContext.length){state.noteOutcome('offline');return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang);}
+    const ticket=reserveModel(ai.estimateAnswerTokens?.(q,reviewedContext,key,lang)??1500);
+    if(!ticket){state.noteOutcome('offline');return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang);}
     try{
-      // Never send unreviewed podcast, news, social or scraped GitHub text
-      // into the generative model as authority or executable instructions.
-      const reviewedContext=docs.filter(d=>d.kind==='curated'||d.kind==='admin-approved');
-      if(!reviewedContext.length){state.noteOutcome('offline');return sendTopic(m,offline(docs,lang,expanded),contextId||primary?.id,lang);}
       noteModel('reviewed-answer','requested');
-      const answer=await ai.answer({question:q,context:reviewedContext,historyKey:key,language:lang});
+      const answer=await ai.answer({question:q,context:reviewedContext,historyKey:key,language:lang,onUsage:tokens=>state.settleAiBudget(ticket,tokens)});
       noteModel('reviewed-answer','success');
       await sendTopic(m,answer.text,contextId||primary?.id,lang,'groq');state.record('answered-ai',true);state.noteOutcome('ai');
     }catch(err){noteModel('reviewed-answer','failed');console.error('AI unavailable:',err.message);
@@ -592,7 +598,9 @@ ${ui(lang,'safety')}`);
       if(name==='diagnostics'){
         if(!group||!await admin(m,true,false))return send(m,'Only group administrators can view diagnostics.');
         const at=new Date().toISOString();const day=at.slice(0,10),hour=at.slice(0,13),month=at.slice(0,7);
-        return send(m,`Sumcoin Helper v${VERSION} diagnostics\nMode: ${state.data.mode}\nAI provider: ${ai.provider}\nAI credentials configured: ${Boolean(ai.apiKey)}\nAutomatic Groq explanations + market intent: ${Boolean(config.autoAI&&ai.apiKey)}\nAI requests used: ${state.data.aiHours[hour]||0}/${HOUR_LIMIT} this hour; ${state.data.aiRequests[day]||0}/${CHAT_LIMIT} today; ${state.data.aiMonths[month]||0}/${MONTH_LIMIT} this month\nLast model attempt: ${lastModel?`${lastModel.at} | ${lastModel.purpose} | ${lastModel.status}`:'none since process start'}\nReply /engine to a bot answer for its source. Reply /why to an incoming message for its routing decision.\nDiagnostics are in memory; no message content is stored.`);
+        const recent=(state.data.aiRecent||[]).filter(r=>r.at>Date.now()-60000);
+        const rollingTokens=recent.reduce((sum,r)=>sum+r.tokens,0);
+        return send(m,`Sumcoin Helper v${VERSION} diagnostics\nMode: ${state.data.mode}\nAI provider: ${ai.provider}\nAI credentials configured: ${Boolean(ai.apiKey)}\nAutomatic Groq explanations + market intent: ${Boolean(config.autoAI&&ai.apiKey)}\nAI requests used: ${recent.length}/${MINUTE_LIMIT} rolling minute; ${state.data.aiHours[hour]||0}/${HOUR_LIMIT} this hour; ${state.data.aiRequests[day]||0}/${CHAT_LIMIT} today; ${state.data.aiMonths[month]||0}/${MONTH_LIMIT} this month\nAI tokens used: ${rollingTokens}/${TOKEN_MINUTE_LIMIT} rolling minute; ${state.data.aiTokenDays[day]||0}/${TOKEN_DAY_LIMIT} today (provider usage when available, else conservative estimate)\nLast model attempt: ${lastModel?`${lastModel.at} | ${lastModel.purpose} | ${lastModel.status}`:'none since process start'}\nReply /engine to a bot answer for its source. Reply /why to an incoming message for its routing decision.\nDiagnostics are in memory; no message content is stored.`);
       }
       if(name==='why'){
         if(!group||!await admin(m,true,false))return send(m,'Only group administrators can inspect routing.');

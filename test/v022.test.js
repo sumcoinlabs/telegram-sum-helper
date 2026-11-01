@@ -37,7 +37,7 @@ function fixture(){
 }
 
 test('v022: today/performance and friendly check-in intent are distinct and do not hijack chatter',()=>{
- assert.equal(VERSION,'0.0.23');
+ assert.equal(VERSION,'0.0.24');
  for(const q of ['hows sumcoin doing today','How’s Sumcoin doing today?','How is Sumcoin doing today?',
    'How is SUM performing today?','Is Sumcoin up or down today?','What is Sumcoin performance today?'])
    assert.deepEqual(marketIntent(q),{kind:'overview',range:'1d',pair:'usd'},q);

@@ -149,3 +149,22 @@ A successfully delivered live-price response creates a 20-minute in-memory marke
 ## v0.0.22 group conversational routing
 
 A clearly worded daily SUM market-status question routes to `range=1d&pair=usd`, reports trailing-24-hour index performance and verifies the response. A casual check-in without a command responds only if the same member has received a bot answer in the past 90 seconds, or explicitly mentions/replies to the bot. Never respond to generic chat among other group members. These paths do not invoke Groq. Admin messages still suppress unsolicited chatter.
+
+
+## v0.0.24: Published Groq free-tier half-budget
+
+When Groq `openai/gpt-oss-120b` is enabled, set the private `.env` to
+`AI_MINUTE_LIMIT=15`, `AI_HOURLY_LIMIT=900`, `AI_DAILY_LIMIT=500`,
+`AI_MONTHLY_LIMIT=15500`, `AI_TOKENS_MINUTE_LIMIT=4000`,
+`AI_TOKENS_DAILY_LIMIT=100000`. Groq publishes 30 RPM, 1,000 RPD, 8,000 TPM,
+200,000 TPD for this model; it does not publish a monthly free-tier quota.
+The hourly/monthly caps are derived internal allowances. Limits are shared
+across both model answer requests and the market intent classifier, not
+across your other Groq organization projects. If your account differs, use
+smaller `.env` values. `429` responses still fall back to reviewed code.
+
+Token figures are conservative preflight reservations, reconciled to provider
+`usage.total_tokens` when it is returned. If no usage is returned, the
+reservation is retained. `/diagnostics` shows request/token consumption.
+Public API-based prices, history, staking facts and FAQs still take their
+existing deterministic paths. Runtime quota counters remain private under `data/`.

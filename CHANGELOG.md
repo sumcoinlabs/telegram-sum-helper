@@ -1,3 +1,16 @@
+## v0.0.24 — Half of published Groq free-tier usage (2026-10-31)
+
+- Raise bot-side caps for `openai/gpt-oss-120b` to 15 requests per rolling minute,
+  900/hour, 500/day, and an internal 15,500/calendar-month allowance (31 x 500).
+  Groq has no published monthly quota; this is an internal guard only.
+- Add common persisted 4,000 tokens/rolling minute and 100,000 tokens/UTC day
+  budgets, using preflight reservations reconciled with real Responses API usage.
+- Apply all limits to both natural-language market intent and source-grounded
+  explanation calls; retain code-only live market data, fallback answers,
+  admin controls, and all existing language and privacy protections.
+- Report rolling request and token usage under `/diagnostics`. Do not reset
+  historical counters or store raw messages or credentials in usage state.
+
 ## v0.0.23 — Conversational follow-ups, Groq guardrails and diagnostics (2026-10-31)
 
 - Fix the real Telegram exchange "whats the price of sumcoin" followed by "whats the change over the last day" for the same member, using the verified one-day market-history endpoint rather than AI-generated figures.

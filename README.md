@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/sumcoinlabs/telegram-sum-helper/actions/workflows/test.yml/badge.svg"></a>
-  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.23"><img alt="Version 0.0.23" src="https://img.shields.io/badge/version-0.0.23-blue"></a>
+  <a href="https://github.com/sumcoinlabs/telegram-sum-helper/tree/v0.0.24"><img alt="Version 0.0.24" src="https://img.shields.io/badge/version-0.0.24-blue"></a>
   <img alt="Node.js 20.11 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20.11-339933?logo=nodedotjs&logoColor=white">
   <img alt="14 supported locales" src="https://img.shields.io/badge/locales-14-0A73B7">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green"></a>
@@ -82,3 +82,5 @@ For an offline, private aggregate audit of a Telegram Desktop export: `python3 s
 ### Natural conversation (v0.0.23)
 
 “How’s Sumcoin doing today?” gets verified 24-hour movement, high and low. Casual check-ins work only within 90 seconds of the same member’s bot interaction, or when they address the bot directly. Common market requests use zero Groq quota. Unclear, genuinely market-related requests may use one capped Groq intent-classification call when `AUTO_AI=true`, with all final market figures still sourced from verified APIs. Admins can use `/diagnostics` for configuration/last-call visibility and reply `/why` to inspect why a message was routed or ignored. No group interruptions.
+
+Groq limits: [Operations](docs/OPERATIONS.md).

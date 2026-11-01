@@ -39,7 +39,7 @@ const conversations=[
 ];
 
 test('v020: public full-history API is parsed, independently validated, cached and never invents ATH',async()=>{
- assert.equal(VERSION,'0.0.23');
+ assert.equal(VERSION,'0.0.24');
  assert.equal(historyUrl('all','usd'),'https://sumcoinprice.com/api/history.php?range=all&pair=usd');
  assert.throws(()=>historyUrl('all','evil'));
  let calls=0;

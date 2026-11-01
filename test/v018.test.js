@@ -13,7 +13,7 @@ import { createHandler } from '../src/bot.js';
 import { VERSION } from '../src/version.js';
 
 test('v018 exact screenshot: plural and punctuation-free live price questions',()=>{
- assert.equal(VERSION,'0.0.23');
+ assert.equal(VERSION,'0.0.24');
  for(const q of [
    'What’s Sumcoins price right now',
    "What's Sumcoins price right now",
