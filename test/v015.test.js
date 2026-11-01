@@ -22,10 +22,10 @@ const setup=({ai=new ConversationAI(),mode='reply'}={})=>{
   return {bot,sent,prices,msg,state,close:()=>fs.rmSync(dir,{force:true,recursive:true})};
 };
 test('v015 protected publisher builds from known v014 release and no secrets',()=>{
-  assert.equal(VERSION,'0.0.20');
+  assert.equal(VERSION,'0.0.21');
   const script=fs.readFileSync(new URL('../scripts/push-update.sh',import.meta.url),'utf8');
-  assert.match(script,/cca163d3b46ae5608ab55f5c8cee795f0e890e38/);
-  assert.match(script,/0\.0\.19/);assert.match(script,/0\.0\.20/);
+  assert.match(script,/9b3e06510ba1961c6ac5d480dccbe8132f876d42/);
+  assert.match(script,/0\.0\.20/);assert.match(script,/0\.0\.21/);
   assert.doesNotMatch(script,/git push --force/);
   const env=fs.readFileSync(new URL('../.env.example',import.meta.url),'utf8');
   for(const setting of ['AI_ENABLED=false','AI_PROVIDER=groq','AI_MODEL=openai/gpt-oss-120b','GROQ_API_KEY=','AI_HOURLY_LIMIT=4','AI_DAILY_LIMIT=12','AI_MONTHLY_LIMIT=60'])assert.ok(env.includes(setting));

@@ -39,7 +39,7 @@ const conversations=[
 ];
 
 test('v020: public full-history API is parsed, independently validated, cached and never invents ATH',async()=>{
- assert.equal(VERSION,'0.0.20');
+ assert.equal(VERSION,'0.0.21');
  assert.equal(historyUrl('all','usd'),'https://sumcoinprice.com/api/history.php?range=all&pair=usd');
  assert.throws(()=>historyUrl('all','evil'));
  let calls=0;
@@ -62,7 +62,7 @@ test('v020: 14 supported languages have a real natural market conversation and l
    assert.equal(detectLanguage(chart,'en'),lang,'first message language: '+lang);
    assert.equal(marketIntent(chart)?.kind,'chart','chart intent: '+lang);
    assert.equal(marketIntent(follow,{active:true})?.kind,'ath','follow-up ATH intent: '+lang);
-   assert.equal(marketIntent(follow,{active:false}),null,'unscoped group follow-up: '+lang);
+   assert.equal(marketIntent(follow,{active:false})?.kind||null,lang==='en'?'ath':null,'standalone English ATH is clear; other follow-ups need context: '+lang);
    const output=await marketAnswer({kind:'ath',pair:'usd'},lang,{history:h});
    assert.equal(output.verified,true);
    assert.match(output.text,/2024-01-01/);
@@ -84,7 +84,7 @@ test('v020: conversational Telegram route, group/admin separation, sourced ATH, 
   await handle(m("Where can I see Sumcoin's historical price chart?"));
   assert.match(sent.at(-1).text,/sumcoinprice\.com\/history\//);assert.doesNotMatch(sent.at(-1).text,/history\.php|guaranteed selling price|\/chart/);
   const n=sent.length;
-  await handle(m('What was the all time high?',4));assert.equal(sent.length,n,'another user must not steal context');
+  await handle(m('What about last year?',4));assert.equal(sent.length,n,'another user must not steal context');
   await handle(m('what was the all time high?'));assert.match(sent.at(-1).text,/1,450\.25/);assert.match(sent.at(-1).text,/2024-01-01/);assert.equal(apiCalls,1);
   await handle(m('What about last year?')); // period uses same fixed API but mock must return matching period
   assert.match(sent.at(-1).text,/couldn.t verify|recorded SUM/); // safe fallback if schema differs

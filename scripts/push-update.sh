@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Protected v0.0.20 publisher, built from verified v0.0.19 production release.
+# Protected v0.0.21 publisher, built from verified v0.0.20 production release.
 # No forced pushes, no private runtime files, no server backups.
 set -Eeuo pipefail
 SOURCE="$(cd "$(dirname "$0")/.." && pwd)"
 for tool in git gh node npm rsync mktemp; do
   command -v "$tool" >/dev/null || { echo "Missing required tool: $tool" >&2; exit 1; }
 done
-[[ "$(node -p "require('$SOURCE/package.json').version")" == '0.0.20' ]] || { echo 'Not a v0.0.20 release.' >&2; exit 1; }
+[[ "$(node -p "require('$SOURCE/package.json').version")" == '0.0.21' ]] || { echo 'Not a v0.0.21 release.' >&2; exit 1; }
 (cd "$SOURCE" && npm run check)
 gh auth status >/dev/null
 LOGIN="$(gh api user -q .login)"
@@ -19,19 +19,19 @@ echo '========== FETCH MAIN =========='
 gh repo clone sumcoinlabs/telegram-sum-helper "$STAGE/repo" -- --branch main --single-branch
 cd "$STAGE/repo"
 CURRENT="$(node -p "require('./package.json').version")"
-if [[ "$CURRENT" == '0.0.20' ]]; then
-  echo 'v0.0.20 is already published. Nothing to do.'
+if [[ "$CURRENT" == '0.0.21' ]]; then
+  echo 'v0.0.21 is already published. Nothing to do.'
   exit 0
 fi
-# This publisher requires the exact v0.0.19 deployment to protect prior releases.
-[[ "$CURRENT" == '0.0.19' ]] || { echo "Unexpected GitHub version $CURRENT. Refusing overwrite." >&2; exit 1; }
-EXPECTED_BASE='cca163d3b46ae5608ab55f5c8cee795f0e890e38'
+# This publisher requires the exact v0.0.20 deployment to protect prior releases.
+[[ "$CURRENT" == '0.0.20' ]] || { echo "Unexpected GitHub version $CURRENT. Refusing overwrite." >&2; exit 1; }
+EXPECTED_BASE='9b3e06510ba1961c6ac5d480dccbe8132f876d42'
 ACTUAL_BASE="$(git rev-parse HEAD)"
 [[ "$ACTUAL_BASE" == "$EXPECTED_BASE" ]] || { echo "GitHub main changed unexpectedly ($ACTUAL_BASE). Aborting." >&2; exit 1; }
-TAGGED_BASE="$(git rev-parse 'refs/tags/v0.0.19^{commit}' 2>/dev/null || true)"
-[[ "$TAGGED_BASE" == "$EXPECTED_BASE" ]] || { echo 'v0.0.19 tag disagrees with main. Aborting.' >&2; exit 1; }
-if git ls-remote --tags origin 'refs/tags/v0.0.20' | grep -q .; then
-  echo 'Tag v0.0.20 already exists on remote; investigate before publishing.' >&2
+TAGGED_BASE="$(git rev-parse 'refs/tags/v0.0.20^{commit}' 2>/dev/null || true)"
+[[ "$TAGGED_BASE" == "$EXPECTED_BASE" ]] || { echo 'v0.0.20 tag disagrees with main. Aborting.' >&2; exit 1; }
+if git ls-remote --tags origin 'refs/tags/v0.0.21' | grep -q .; then
+  echo 'Tag v0.0.21 already exists on remote; investigate before publishing.' >&2
   exit 1
 fi
 
@@ -41,15 +41,15 @@ while IFS= read -r file; do FILES+=("$file"); done < <(cd "$SOURCE" && find src 
 (cd "$SOURCE" && rsync -a --relative "${FILES[@]}" "$STAGE/repo/")
 git add -- "${FILES[@]}"
 git diff --cached --check
-[[ "$(node -p "require('./package.json').version")" == '0.0.20' ]] || exit 1
+[[ "$(node -p "require('./package.json').version")" == '0.0.21' ]] || exit 1
 npm run check
 if git diff --cached --quiet; then echo 'No release changes staged.' >&2; exit 1; fi
 
-echo '========== PUBLISH v0.0.20 =========='
+echo '========== PUBLISH v0.0.21 =========='
 git diff --cached --stat
-git commit -m 'Release Sumcoin Helper v0.0.20: natural multilingual history, verified ATH and market conversations'
+git commit -m 'Release Sumcoin Helper v0.0.21: repair standalone ATH and live-quote conversational continuity'
 git push origin HEAD:main
-git tag -a v0.0.20 -m 'Telegram Sumcoin Helper v0.0.20'
-git push origin v0.0.20
+git tag -a v0.0.21 -m 'Telegram Sumcoin Helper v0.0.21'
+git push origin v0.0.21
 printf '\nPublished: https://github.com/sumcoinlabs/telegram-sum-helper\n'
 git log -1 --oneline

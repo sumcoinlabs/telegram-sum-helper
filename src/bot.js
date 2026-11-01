@@ -187,6 +187,18 @@ export function createHandler({client,state,config,botUsername,knowledge,learnin
       answerOrigins.set(`${m.chat.id}:${result.message_id}`,{origin,until:now()+24*3600000});
       if(answerOrigins.size>1000){for(const [key,v] of answerOrigins)if(v.until<=now())answerOrigins.delete(key);while(answerOrigins.size>1000)answerOrigins.delete(answerOrigins.keys().next().value);}
     }
+    // Live quotes belong to the same SUM market conversation as charts and
+    // historical figures. Bridge their context only AFTER Telegram confirms
+    // delivery. The scope is one member in one group, with no message text.
+    if(id==='index-live'&&origin==='live'&&Number.isSafeInteger(result?.message_id)){
+      const item={pair:'usd',kind:'price',lang,until:now()+20*60_000};
+      marketByMember.set(`${m.chat.id}:${m.from?.id||0}`,item);
+      marketByReply.set(`${m.chat.id}:${result.message_id}`,item);
+      for(const map of [marketByMember,marketByReply]){
+        if(map.size>500){for(const [key,v] of map)if(v.until<=now())map.delete(key);
+          while(map.size>500)map.delete(map.keys().next().value);}
+      }
+    }
     if(id&&knowledge.find(id)){
       rememberTopic(m,id,lang);
       if(Number.isSafeInteger(result?.message_id)){

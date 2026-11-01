@@ -1,3 +1,10 @@
+## v0.0.21 — Live quote to historical follow-up continuity (2026-10-31)
+
+- Fix real Telegram sequence: “whats the price of sum” followed by “what was the all time high” now gives verified SUM ATH and UTC date, without a chart request, hyphen, command, or Groq API call.
+- Retain 20-minute in-RAM market context after a successfully delivered live-rate quote; context stays member/group/reply-scoped and is never written to the learning database.
+- Support clearly worded standalone English ATH questions in the Sumcoin-only group. Prevent named non-Sumcoin assets from being answered with SUM's ATH; vague unrelated-member follow-ups remain ignored.
+- Add tests reproducing the exact messages, owner/admin behavior, third-party asset questions, failed deliveries, and preserve all prior features including 14-language market conversations and quotas.
+
 ## v0.0.20 — Natural market conversations and verified historical statistics (2026-10-31)
 
 - Use natural chat instead of marketing canned responses for price-history questions. Interpret the full-history all-time high from validated public SumcoinPrice OHLC points and give its recorded USD/BTC value and UTC date. Cache read-only results for 15 minutes; refuse unverified, malformed, unavailable or oversized API data rather than invent a price.

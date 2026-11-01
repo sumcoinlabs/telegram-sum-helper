@@ -16,6 +16,15 @@ const api = /\b(?:api|endpoint|json|data feed|raw data|developer|technical data|
 const price = /\b(?:price|rate|quote|worth|value|precio|prix|preco|cotac|preis|kurs|prezzo|harga|fiyat|valeur|valor|wert|valore)\b|цена|سعر|कीमत|価格|价格|가격/iu;
 const ask = /[?¿？؟]|^(?:what|whats|what's|where|when|how|show|tell|give|find|open|link|compare|can|could|please|i want|i need|what about|and|was|were|is|montre|montrez|quel|quelle|quand|ou|comment|et|cuanto|cuando|donde|muestra|mostrar|mostra|quando|onde|wie|wann|wo|zeige|come|quando|dove|mostra|сколько|когда|где|как|покажи|متى|أين|كم|कैसे|कब|कहाँ|多少|什么时候|哪里|どう|いつ|どこ|얼마|언제|어디|ne|nerede|kapan|berapa|bagaimana|di mana)\b/iu;
 const shorthand = /^(?:sumcoins?|sum)\s+(?:chart|graph|history|ath|api)$/iu;
+// In the dedicated Sumcoin group, an unqualified, standalone ATH question is
+// a clear request for SUM's record index value. Do not require the member to
+// first click a chart link or state the project name. Keep this narrowly
+// bounded to unambiguous complete questions, never fragments of other chat.
+const standaloneAth = /^(?:what\s+(?:was|is|has been|were)|what['’]?s|how high (?:was|did)|when was)\s+(?:the\s+)?(?:all[ -]?time[ -]?high|ath|highest(?:\s+(?:price|value|rate))?|peak(?:\s+(?:price|value))?|record(?:\s+(?:price|high))?)(?:\s+(?:ever|reached|recorded))?[?.!]*$/iu;
+// A follow-up that explicitly names a *different* coin is NOT a question
+// about SUM even when the member has recent Sumcoin market context.
+const differentAsset = /\b(?:bitcoin|btc|ethereum|ether|eth|dogecoin|doge|litecoin|ltc|digibyte|dgb|solana|ripple|xrp|cardano)\b/iu;
+
 const rangeFrom = s => {
   if(/\b(?:five years|5 years|5y|cinco anos|cinq ans|funf jahre)\b/u.test(s))return '5y';
   if(/\b(?:past year|last year|one year|1 year|12 months|1y|ano passado|ultimo ano|ano anterior|dernier an|derniere annee|letzte jahr|ultimo anno|ultimo ano|annee derniere|año pasado|ultimo año|tahun lalu|gecen yil)\b|去年|昨年|작년| पिछले साल/u.test(s))return '1y';
@@ -32,8 +41,12 @@ export function marketIntent(question, {active=false}={}) {
   const named=coin.test(s);
   // A group follow-up may omit the coin name ONLY with a recent, same-member
   // market conversation or an explicit reply to the relevant bot message.
-  if(!named&&!active)return null;
   const isHigh=high.test(s), isCompare=compare.test(s), isChart=chart.test(s);
+  if(!named&&!active&&!standaloneAth.test(s))return null;
+  // Prevent questions about Bitcoin's own ATH being answered with SUM's ATH.
+  // Explicit relative comparisons retain their separate, safe routing.
+  if(!named&&isHigh&&differentAsset.test(s)&&
+     !/\b(?:relative to|compared|comparison|compare|versus|vs|higher than|against|in bitcoin|in btc)\b/iu.test(s))return null;
   if(api.test(s)&&named)return {kind:'api',pair:'usd'};
   if(isHigh)return {kind:'ath',pair:/\b(?:btc|bitcoin)\b/i.test(s)?'btc':'usd'};
   if(isCompare)return {kind:'compare',pair:'btc'};
@@ -89,7 +102,7 @@ export class MarketHistory {
    const url=historyUrl(range,pair),now=this.now(),cached=this.cache.get(url);
    if(cached&&cached.until>now)return readResponse(cached.data,kind,range,pair);
    // Only fixed HTTPS endpoints. No redirects, raw HTML, or oversized responses.
-   const res=await this.fetch(url,{headers:{accept:'application/json','user-agent':'SumcoinHelper/0.0.20'},redirect:'error',signal:AbortSignal.timeout(12000)});
+   const res=await this.fetch(url,{headers:{accept:'application/json','user-agent':'SumcoinHelper/0.0.21'},redirect:'error',signal:AbortSignal.timeout(12000)});
    if(!res.ok)throw Error('Market data unavailable');
    const type=res.headers?.get?.('content-type')||'';
    if(type&&!/json/i.test(type))throw Error('Unexpected market response type');
